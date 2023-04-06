@@ -112,7 +112,7 @@ class TechNodeViz:
         """
 		tech_node_freq = self.auto_df['technology node'].value_counts()
 
-		layout = go.Layout(title='Frequency of Technology Nodes', template='plotly_white')
+		layout = go.Layout(title='Count of Jobs by Technology Nodes', template='plotly_white')
 		tn_freq_graph = go.FigureWidget(layout=layout)
 		tn_freq_graph.add_bar(y=tech_node_freq.values, x=tech_node_freq.index)
 
@@ -134,7 +134,7 @@ class TechNodeViz:
         """
 		prod_name_freq = self.auto_df[self.auto_df['technology node']==tech_node]['product name'].value_counts()
 
-		layout = go.Layout(title=f'Frequency of Product Names for {tech_node}', template='plotly_white')
+		layout = go.Layout(title=f'Count of Jobs by Product Names for {tech_node}', template='plotly_white')
 		prod_freq_graph = go.FigureWidget(layout=layout)
 		prod_freq_graph.add_bar(y=prod_name_freq.values, x=prod_name_freq.index)
     
@@ -158,7 +158,7 @@ class TechNodeViz:
         """
 		failure_freq = self.auto_df[(self.auto_df['technology node']==tech_node) & (self.auto_df['product name']==prod_name)]['failure'].value_counts()
 
-		layout = go.Layout(title=f'Frequency of Failure for {prod_name} in {tech_node}', template='plotly_white')
+		layout = go.Layout(title=f'Count of Jobs for {prod_name} in {tech_node}', template='plotly_white')
 		fail_freq_graph = go.FigureWidget(layout=layout)
 		fail_freq_graph.add_bar(y=failure_freq.values, x=failure_freq.index)
 
