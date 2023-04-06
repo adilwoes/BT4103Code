@@ -274,7 +274,7 @@ def format_incoming_jobs(final_df, ww_calendar):
         row['LMS Submission Date'] = start_d
         row['FI Start'] = pd.NaT
         row['FI Interim/ Resume'] = pd.NaT
-        row['FI End'] = pd.NaT   
+        row['FI End'] = start_d 
         row['FI Pause'] = pd.NaT    
         row['FI Resume'] = pd.NaT 
         final_df = pd.concat([final_df,pd.DataFrame(row).T.reset_index(drop=True)]).reset_index(drop=True)
@@ -293,31 +293,31 @@ def format_cancelled_jobs(final_df, ww_calendar):
 
     for name, group in df_grp:
         if name in cancelled:
-            if (pd.isnull(group['LMS Submission Date'].min())):
-                if (pd.isnull(group['FI Start'].min())):
-                    if (pd.isnull(group['FI End'].min())):
+            if (pd.isnull(group['FI End'].min())):
+                if (pd.isnull(group['LMS Submission Date'].min())):
+                    if (pd.isnull(group['FI Start'].min())):
                         ww = int(group['Work Week'].min())
                         y = int(group['Work Year'].min())
                         ww_calendar = ww_calendar[ww_calendar['Year'] == y]
                         m_ww = 'Dec'
-                        for i in range(1,len(ww_calendar)):
-                            if ww_calendar.iloc[0,i] >= m:
+                        for i in range(1,len(ww_calendar.columns)):
+                            if ww_calendar.iloc[0,i] >= ww:
                                 m_ww = ww_calendar.columns[i]
                                 break
                         m = month_dict[m_ww]
                         start_d = datetime(int(y),int(m),1)
                     else: 
-                        start_d = group['FI End'].min()
+                        start_d = group['FI Start'].min()
                 else:
-                    start_d = group['FI Start'].min()
+                    start_d = group['LMS Submission Date'].min()
             else: 
-                start_d = group['LMS Submission Date'].min()
+                start_d = group['FI End'].max()
             row_data = group.iloc[0,:]
             row_data['STATUS'] = 'CANCELLED'
             row_data['LMS Submission Date'] = start_d
             row_data['FI Start'] = pd.NaT
             row_data['FI Interim/ Resume'] = pd.NaT
-            row_data['FI End'] = pd.NaT   
+            row_data['FI End'] = start_d
             row_data['FI Pause'] = pd.NaT    
             row_data['FI Resume'] = pd.NaT 
 
@@ -473,12 +473,18 @@ def save_imputed_to_excel(final_df, file_names):
 def run_impute(directory):
     df, ww_calendar, data_update, file_names = read_cleaned_data(directory)
     updated_df = update_missing_data(df, data_update, file_names)
+    print('1. DataFrame has been updated with the latest data')
     formatted_df = format_dates(updated_df, file_names)
+    print('2. All dates are standardised')
     #formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     formatted_df = fill_resume_pause(formatted_df)
+    print('3. Resume and Pause Columns are filled')
     formatted_df = format_incoming_jobs(formatted_df, ww_calendar)
+    print('4. Incoming Jobs are formatted')
     formatted_df = format_cancelled_jobs(formatted_df, ww_calendar)
+    print('5. Cancelled Jobs are formatted')
     formatted_df = infer_fi_resume(formatted_df)
+    print('6. Smart Inference excuted for FI Pause and Resume')
     formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     formatted_df = cal_delays(formatted_df)
     save_imputed_to_excel(formatted_df, file_names)

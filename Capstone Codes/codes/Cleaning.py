@@ -148,9 +148,13 @@ def save_missing_to_excel(df, file_names, missing, directory):
 def run_clean(directory):
     df, file_names = read_data(directory)
     cleaned_df = clean_data(df)
+    print('1. All Strings are reformatted, data is cleaned')
     final_df = feature_create(cleaned_df)
+    print('2. Useful features are created')
     final_df = remove_irrelevant_rows(final_df)
+    print('3. Irrelevant jobs (e.g. PFA only jobs are removed')
     missing = get_jobs_missing_data(final_df)
-
     save_to_excel(final_df, file_names)
-    save_missing_to_excel(final_df, file_names, missing, directory)                          
+    print('4. Missing Data is outputted in Excel')
+    save_missing_to_excel(final_df, file_names, missing, directory)  
+    print('5. Cleaned Data is outputted in Excel')

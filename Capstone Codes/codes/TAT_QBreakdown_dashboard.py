@@ -21,7 +21,9 @@ pd.set_option('display.max_colwidth', None)
 
 class TatQBreakdown:
     br = HTML(value="<br></br>")
-    title1 = HTML(value="<h1><b>TAT</b></h1>")
+    ww_table = HTML(value="<h3><b>Reference Table of Monthly Start Weeks</b></h3>")
+    param = HTML(value="<h3><b>Filter According To:</b></h3>")
+    title1 = HTML(value="<h1><b>Turnaround Time</b></h1>")
     title2 = HTML(value="<h1><b>High Priority Queue Time Breakdown</b></h1>")
     title3 = HTML(value="<h1><b>Overall Analysis Status</b></h1>")
     title4 = HTML(value="<h1><b>Type Breakdown</b></h1>")
@@ -109,26 +111,26 @@ class TatQBreakdown:
             display(self.ww)
             
         self.turnaround_graph = self.get_cycle_time_graph(self.df)
-        self.csc_graph = self.get_monthly_completed_submitted(self.df)
+        self.csc_graph = self.get_monthly_completed_submitted(self.df, self.cancelled)
         self.priority_graph = self.high_priority_analysis(self.df)
         self.type_graph, self.type_month_graph = self.type_analysis(self.df)
         self.prod_graph = self.product_loading(self.df)
         
-        self.var_tab1 = VBox([HBox([self.ww_year_start_widget, self.ww_start_widget, self.ww_year_end_widget, \
-                                    self.ww_end_widget]), self.br, \
+        self.var_tab1 = VBox([HBox([self.ww_year_start_widget, self.ww_start_widget]),\
+                              HBox([self.ww_year_end_widget,self.ww_end_widget]), self.br, \
                     HBox([self.type_widget, self.product_widget, self.des_widget, self.priority_widget]), self.br, \
                        self.refresh_btn, self.br])
 
-        self.var_tab2 = VBox([HBox([self.ww_year_start_widget1, self.ww_start_widget1, self.ww_year_end_widget1, \
-                                    self.ww_end_widget1]), self.br,
-                        HBox([self.type_widget1, self.product_widget1, self.des_widget1, self.priority_widget1]), self.br,\
-                           self.refresh_btn1, self.br])
+        self.var_tab2 = VBox([HBox([self.ww_year_start_widget1, self.ww_start_widget1]),\
+                              HBox([self.ww_year_end_widget1, self.ww_end_widget1]), self.br, \
+                        HBox([self.type_widget1, self.product_widget1, self.des_widget1, self.priority_widget1]),\
+                              self.br, self.refresh_btn1, self.br])
               
-        self.kpi_tab = VBox([self.output1,  self.br, self.var_tab1, self.title1, self.turnaround_graph, self.tat_btn, \
-                                self.title2, self.priority_graph, \
+        self.kpi_tab = VBox([self.ww_table, self.output1, self.param, self.var_tab1, self.title1, \
+                             self.turnaround_graph, self.tat_btn, self.title2, self.priority_graph, \
                                     self.title3, self.csc_graph])
 
-        self.kpi_others_tab = VBox([self.output1,  self.br, self.var_tab2, \
+        self.kpi_others_tab = VBox([self.ww_table, self.output1, self.param, self.var_tab2, \
                               self.title4, self.type_graph,\
                               self.title5, self.type_month_graph,\
                               self.title6, self.prod_graph])
@@ -164,19 +166,29 @@ class TatQBreakdown:
         self.export_cycle_time_data(list(df_res['Analysis']), list(df_res['Queue']), list(df_res['FI End']), \
                                [0] * len(df_res['FI End']))
               
-        layout = go.Layout(title='TAT', xaxis_title='Month', yaxis_title='# of Days',template = 'plotly_dark')
+        layout = go.Layout(title='TAT', xaxis= dict(title='Month'),template = 'simple_white',\
+                             yaxis=dict(title='# of Days'), barmode="relative", \
+                                       yaxis2=dict(title=dict(text="Tester Utilisation %"),\
+                                            side="right",range=[0, 100], dtick = 10, overlaying="y"),\
+                                      legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
         turnaround_graph = go.FigureWidget(layout=layout)
-        turnaround_graph.add_bar(y=df_res['Analysis'], x = df_res['FI End'], name='Analysis')
-        turnaround_graph.add_bar(y=df_res['Queue'], x = df_res['FI End'], name= 'Queue')
+        
+        turnaround_graph.add_bar(y=df_res['Analysis'], x = df_res['FI End'], name='Analysis', \
+                                 marker_color = '#104E8B', yaxis='y1')
+        
+        turnaround_graph.add_bar(y=df_res['Queue'], x = df_res['FI End'], name= 'Queue', marker_color = '#8B1A1A', yaxis='y1')
+        
         turnaround_graph.add_scatter(y=[10] * len(df_res['Analysis']), x = df_res['FI End'],\
-                                     name= 'KPI Goal', line=dict(width=4, dash='dot'))
+                                     name= 'KPI Goal', line=dict(color='#A2CD5A', width=3), mode='lines',yaxis='y1')
+        
         turnaround_graph.add_scatter(y=[0] * len(df_res['Analysis']), x = df_res['FI End'],\
-                                     name= 'Tester Utilisation')
-        turnaround_graph.update_layout(barmode="relative")
+                                    name= 'Tester Utilisation', line=dict(color='#68228B', width=3),mode='lines', yaxis="y2")
+        
         return turnaround_graph
 
-    def get_monthly_completed_submitted(self, df):
+    def get_monthly_completed_submitted(self, df, cancelled):
         #jobs completed, submitted, cancelled
+        cancelled = cancelled.groupby('LMS #').max().loc[:,['FI End']]
         completed = df.groupby('LMS #').last().loc[:,['LMS Submission Date','FI End']]
         #completed['FI End'] = pd.to_datetime(completed['FI End'], errors='coerce')
         #completed['LMS Submission Date'] = pd.to_datetime(completed['LMS Submission Date'], errors='coerce')
@@ -190,40 +202,42 @@ class TatQBreakdown:
                             .rename(columns={'LMS Submission Date': 'Count'})\
                             .reset_index()
 
-        cancelledd = self.cancelled.groupby(self.cancelled['LMS Submission Date'].dt.strftime('%Y-%m'))\
+        cancelledd = cancelled.groupby(cancelled['FI End'].dt.strftime('%Y-%m'))\
                         .count()\
-                        .rename(columns={'LMS Submission Date': 'Count'})\
+                        .rename(columns={'FI End': 'Count'})\
                         .reset_index()
         month_end_dem = self.get_month_end_demand(df)
         layout = go.Layout(title='Overall Analysis Status', xaxis_title='Month', \
-                           yaxis_title='# of Jobs',template = 'plotly_dark')
+                           yaxis_title='# of Jobs',template = 'plotly_white',\
+                          legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
         csc_graph = go.FigureWidget(layout=layout)
-        csc_graph.add_bar(y=completedd['Count'], x = completedd['FI End'], name='Completed')
-        csc_graph.add_bar(y=submitted['Count'], x = submitted['LMS Submission Date'], name='Submitted')
-        csc_graph.add_bar(y=cancelledd['Count'], x = cancelledd['LMS Submission Date'], name='Cancelled')
-        csc_graph.add_scatter(y=month_end_dem['Count'], x = month_end_dem.index, name='Month End Demand')
+        csc_graph.add_bar(y=submitted['Count'], x = submitted['LMS Submission Date'], marker_color = '#008000',\
+                          name='Submitted')
+        csc_graph.add_bar(y=completedd['Count'], x = completedd['FI End'], name='Completed', marker_color = '#D2691E')
+        csc_graph.add_bar(y=cancelledd['Count'], x = cancelledd['FI End'], name='Cancelled', marker_color='#7AC5CD')
+        csc_graph.add_scatter(y=month_end_dem['Count'], x = month_end_dem.index, name='Month End Demand', mode='lines')
         return csc_graph
 
     def high_priority_analysis(self, df):
         #high priority analysis
-        df = df[['Priority #', 'LMS #','LMS Submission Date', 'FI End', 'STATUS']]
+        df = df[['Priority #', 'LMS #', 'FI End', 'STATUS']]
         df = df.drop_duplicates()
         high_priority_df = df[df['Priority #'] == 'H']
         temp = pd.DataFrame(high_priority_df['STATUS'].value_counts())
         values = [x for x in list(df['STATUS'].unique()) if ('HOLD' in x) | ('QUEUE' in x)]
         temp = temp[temp.index.isin(values)].reset_index()
 
-        layout = go.Layout(title='High Priority Queue Breakdown', template = 'plotly_dark')
+        layout = go.Layout(title='High Priority Queue Breakdown', template = 'plotly_white')
         priority_graph = go.FigureWidget(layout=layout)
         priority_graph.add_trace(go.Pie(labels=temp['index'], values=temp['STATUS']))
         return priority_graph
 
     def type_analysis(self, df):
         #type
-        df = df[['Priority #', 'LMS #','TYPE', 'LMS Submission Date', 'FI End']]
+        df = df[['LMS #','TYPE','FI End']]
         df = df.drop_duplicates()
         type_df = df['TYPE'].value_counts().reset_index()
-        layout = go.Layout(title='SGP Analysis Type', template = 'plotly_dark')
+        layout = go.Layout(title='SGP Analysis Type', template = 'plotly_white')
         type_graph = go.FigureWidget(layout=layout)
         type_graph.add_trace(go.Pie(labels=type_df['index'], values=type_df['TYPE']))
 
@@ -233,18 +247,18 @@ class TatQBreakdown:
                             .reset_index()
 
         layout = go.Layout(title='Type Analysis By Month', xaxis_title='Month', yaxis_title='# of Usage',\
-                           template = 'plotly_dark')
+                           template = 'plotly_white')
         type_month_graph = go.FigureWidget(layout=layout)
-        type_month_graph.add_bar(y=type_month['Priority #'], x = type_month['FI End'], text = type_month["TYPE"], \
+        type_month_graph.add_bar(y=type_month['Count'], x = type_month['FI End'], text = type_month["TYPE"], \
                                  name='Type', base='stack')
         return type_graph, type_month_graph
 
     def product_loading(self, df):
         #product loading
-        df = df[['Priority #', 'LMS #','Product', 'LMS Submission Date', 'FI End']]
+        df = df[['LMS #','Product', 'FI End']]
         df = df.drop_duplicates()
         prod = df['Product'].value_counts().reset_index()
-        layout = go.Layout(title='SGP Product Loading', template = 'plotly_dark')
+        layout = go.Layout(title='SGP Product Loading', template = 'plotly_white')
         prod_graph = go.FigureWidget(layout=layout)
         prod_graph.add_trace(go.Pie(labels=prod['index'], values=prod['Product']))
         return prod_graph
@@ -271,11 +285,12 @@ class TatQBreakdown:
             for val in not_in:
                 graph_df = graph_df[graph_df['Priority #'] != val]
 
-        graph_df = graph_df[(graph_df['Work Week'] >= self.ww_start_widget1.value) & \
-                            (graph_df['Work Year'] >= self.ww_year_start_widget1.value)]
+        graph_df = graph_df[(graph_df['FI End Week'] >= self.ww_start_widget1.value) & \
+                            (graph_df['FI End Year'] >= self.ww_year_start_widget1.value)]
 
-        graph_df = graph_df[(graph_df['Work Week'] <= self.ww_end_widget1.value) & \
-                        (graph_df['Work Year'] <= self.ww_year_end_widget1.value)]
+        graph_df = graph_df[(graph_df['FI End Week'] <= self.ww_end_widget1.value) & \
+                        (graph_df['FI End Year'] <= self.ww_year_end_widget1.value)]
+        
         return graph_df
     
     def filter_data(self, graph_df):
@@ -299,11 +314,11 @@ class TatQBreakdown:
             for val in not_in:
                 graph_df = graph_df[graph_df['Priority #'] != val]
 
-        graph_df = graph_df[(graph_df['Work Week'] >= self.ww_start_widget.value) & \
-                            (graph_df['Work Year'] >= self.ww_year_start_widget.value)]
+        graph_df = graph_df[(graph_df['FI End Week'] >= self.ww_start_widget.value) & \
+                            (graph_df['FI End Year'] >= self.ww_year_start_widget.value)]
 
-        graph_df = graph_df[(graph_df['Work Week'] <= self.ww_end_widget.value) & \
-                        (graph_df['Work Year'] <= self.ww_year_end_widget.value)]
+        graph_df = graph_df[(graph_df['FI End Week'] <= self.ww_end_widget.value) & \
+                        (graph_df['FI End Year'] <= self.ww_year_end_widget.value)]
         return graph_df
 ## ------------------------------ READ TAT TABLE FUNCTIONS
     def read_tat_data(self, evt):
@@ -314,17 +329,25 @@ class TatQBreakdown:
 ## ------------------------------ REFRESH FUNCTIONS  
     def refresh_tab1(self, evt):
         graph_df = self.filter_data(self.df)
-
+        cancelled = self.filter_data(self.cancelled)
+        
         tat_data = self.get_cycle_time_graph(graph_df).data
         self.turnaround_graph.data[0]['y'] = tat_data[0]['y']
         self.turnaround_graph.data[1]['y'] = tat_data[1]['y']
+        self.turnaround_graph.data[0]['x'] = tat_data[0]['x']
+        self.turnaround_graph.data[1]['x'] = tat_data[1]['x']
         self.export_cycle_time_data(tat_data[0]['y'], \
                                tat_data[1]['y'], \
                                tat_data[1]['x'], tat_data[2]['y'])
-        self.csc_graph.data[0]['y'] = self.get_monthly_completed_submitted(graph_df).data[0]['y']
-        self.csc_graph.data[1]['y'] = self.get_monthly_completed_submitted(graph_df).data[1]['y'] 
-        self.csc_graph.data[2]['y'] = self.get_monthly_completed_submitted(graph_df).data[2]['y']
-        self.csc_graph.data[3]['y'] = self.get_monthly_completed_submitted(graph_df).data[3]['y']
+        new_data = self.get_monthly_completed_submitted(graph_df, cancelled).data
+        self.csc_graph.data[0]['x'] = new_data[0]['x']
+        self.csc_graph.data[1]['x'] = new_data[1]['x'] 
+        self.csc_graph.data[2]['x'] = new_data[2]['x']
+        self.csc_graph.data[3]['x'] = new_data[3]['x']
+        self.csc_graph.data[0]['y'] = new_data[0]['y']
+        self.csc_graph.data[1]['y'] = new_data[1]['y'] 
+        self.csc_graph.data[2]['y'] = new_data[2]['y']
+        self.csc_graph.data[3]['y'] = new_data[3]['y']
         self.priority_graph.data[0].values = self.high_priority_analysis(graph_df).data[0].values
         self.priority_graph.data[0].labels = self.high_priority_analysis(graph_df).data[0].labels
 

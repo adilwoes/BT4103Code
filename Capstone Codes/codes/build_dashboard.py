@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 from pptx import Presentation
 from pptx.util import Pt, Inches
 from pptx.enum.text import PP_ALIGN
+from pptx.dml.color import RGBColor
 
 from codes.Tool_Util_BU_Loading import ToolUtilBULoading
 from codes.Anomaly_Detection import Anomaly_Detection
@@ -96,12 +97,15 @@ class BuildDashboard:
         #Layout = X.slide_layouts[5]
         first_slide = X.slides[0]
         #first_slide.shapes.title.text = ''
-        first_slide.shapes.add_picture('Output/TAT.png', Inches(0.2), Inches(1.5), height = Inches(2.7))
-        first_slide.shapes.add_picture('Output/High Priority Queue Time Breakdown.png', Inches(4.6), Inches(1.5), height = Inches(2.7))
-        first_slide.shapes.add_picture('Output/Overall Analysis Status.png', Inches(9.2), Inches(1.5), height = Inches(2.7))
-        first_slide.shapes.add_picture('Output/BU Loading.png', Inches(3), Inches(4.5), height = Inches(2.7))
-        first_slide.shapes.add_picture('Output/Tool Utilization.png', Inches(7.6), Inches(4.5), height = Inches(2.7))
+        first_slide.shapes.add_picture('Output/TAT.png', Inches(0.2), Inches(1), height = Inches(3))
+        first_slide.shapes.add_picture('Output/High Priority Queue Time Breakdown.png', Inches(4.6), Inches(1), \
+                                       height = Inches(3))
+        first_slide.shapes.add_picture('Output/Overall Analysis Status.png', Inches(9), Inches(1), height = Inches(3))
+        first_slide.shapes.add_picture('Output/BU Loading.png', Inches(2.3), Inches(4.2), height = Inches(3))
+        first_slide.shapes.add_picture('Output/Tool Utilization.png', Inches(6.9), Inches(4.2), height = Inches(3))
 
+        for i in range(1,6):
+            first_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
 #         text_frame = first_slide.shapes[0].text_frame
 
 #         p = text_frame.paragraphs[0]
@@ -123,24 +127,28 @@ class BuildDashboard:
         #Layout = X.slide_layouts[5]
         first_slide = X.slides[0]
         #first_slide.shapes.title.text = ''
-        first_slide.shapes.add_picture('Output/TAT.png', Inches(0.2), Inches(1.5), height = Inches(2.2))
-        first_slide.shapes.add_picture('Output/High Priority Queue Time Breakdown.png', Inches(4.6), Inches(1.5), height = Inches(2.2))
-        first_slide.shapes.add_picture('Output/Overall Analysis Status.png', Inches(9.2), Inches(1.5), height = Inches(2.2))
-        first_slide.shapes.add_picture('Output/BU Loading.png', Inches(3), Inches(4), height = Inches(2.2))
-        first_slide.shapes.add_picture('Output/Tool Utilization.png', Inches(7.6), Inches(4), height = Inches(2.2))
+        first_slide.shapes.add_picture('Output/TAT.png', Inches(0.2), Inches(1), height = Inches(3))
+        first_slide.shapes.add_picture('Output/High Priority Queue Time Breakdown.png', Inches(4.6), Inches(1), \
+                                       height = Inches(3))
+        first_slide.shapes.add_picture('Output/Overall Analysis Status.png', Inches(9), Inches(1), height = Inches(3))
+        first_slide.shapes.add_picture('Output/BU Loading.png', Inches(2.3), Inches(4.2), height = Inches(3))
+        first_slide.shapes.add_picture('Output/Tool Utilization.png', Inches(6.9), Inches(4.2), height = Inches(3))
         
-        Layout = X.slide_layouts[5]
-        second_slide = X.slides.add_slide(Layout)
-        second_slide.shapes.title.text = ''
-        second_slide.shapes.add_picture('Output/Type Breakdown.png', Inches(0.2), Inches(1.5), height = Inches(2.7))
-        second_slide.shapes.add_picture('Output/Type Breakdown by Month.png', Inches(4.6), Inches(1.5), height = Inches(2.7))
-        second_slide.shapes.add_picture('Output/Product Breakdown.png', Inches(9.2), Inches(1.5), height = Inches(2.7))
-        second_slide.shapes.add_picture('Output/Technology Node Distribution.png', Inches(0.2), Inches(4.5), height = Inches(2.7))
-        second_slide.shapes.add_picture('Output/Technology Product Distribution.png', Inches(4.6), Inches(4.5), \
-                                        height = Inches(2.7))
-        second_slide.shapes.add_picture('Output/Technology Product Distribution.png', Inches(9.2), Inches(4.5), \
-                                        height = Inches(2.7))
+        second_slide = X.slides[1]
+        #second_slide.shapes.title.text = ''
+        second_slide.shapes.add_picture('Output/Type Breakdown.png', Inches(0.2), Inches(1), height = Inches(3))
+        second_slide.shapes.add_picture('Output/Type Breakdown by Month.png', Inches(4.6), Inches(1), height = Inches(3))
+        second_slide.shapes.add_picture('Output/Product Breakdown.png', Inches(9), Inches(1), height = Inches(3))
+        second_slide.shapes.add_picture('Output/Technology Node Distribution.png', Inches(0.2), Inches(4.2), height = Inches(3))
+        second_slide.shapes.add_picture('Output/Technology Product Distribution.png', Inches(4.6), Inches(4.2), \
+                                        height = Inches(3))
+        second_slide.shapes.add_picture('Output/Technology Product Distribution.png', Inches(9), Inches(4.2), \
+                                        height = Inches(3))
 
+        for i in range(1,7):
+            if i < 6:
+                first_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
+            second_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
 #         text_frame = first_slide.shapes[0].text_frame
 
 #         p = text_frame.paragraphs[0]

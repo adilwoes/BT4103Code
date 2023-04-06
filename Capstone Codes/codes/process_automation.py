@@ -52,7 +52,7 @@ class TATAutomation:
 		
 	def process_ww(self):
 		self.ww = pd.read_excel(self.ww_fp)
-		self.ww = self.ww[self.ww['Year'].isin(self.workyear)].reset_index()
+		self.ww = self.ww[self.ww['Year'].isin(self.workyear)].reset_index(drop=True)
 
 class AnomalyAutomation:
 	def __init__(self, file_path):

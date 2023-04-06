@@ -19,6 +19,8 @@ def get_cancelled_df(df):
     #remove cancelled items, for analysis later
     cancelled = df[df['STATUS'] == 'CANCELLED']
     df = df[~df['LMS #'].isin(cancelled['LMS #'].unique())]
+    cancelled['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in cancelled['FI End']]
+    cancelled['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in cancelled['FI End']]
     return df, cancelled
 
 def analyse_jobs(df):
@@ -28,11 +30,12 @@ def analyse_jobs(df):
     ids = list(set(completed_ids + handover_ids))
     
     #overall
+    print('')
     print(f"Total jobs in database: {df['LMS #'].nunique()}")
     complete_df = df[df['LMS #'].isin(ids)]
 
     print(f'Total completed jobs: {len(ids)}')
-    print('--------------------------')
+    print('---------------------------------------------')
 
     #fi only
     fi_only = complete_df[complete_df['FI_Only'] == 'Yes']
@@ -59,6 +62,7 @@ def analyse_jobs(df):
     print(f"Total completed jobs by FI-PFA without completed date: {fi_pfa_no_completed_dates['LMS #'].nunique()}")
     print(f"Total completed jobs by FI-PFA without start date: {fi_pfa_only[fi_pfa_only['LMS Submission Count'] == 0]['LMS #'].nunique()}")
     print(f"Total completed jobs by FI-PFA with both dates: {fi_pfa_only_usable['LMS #'].nunique()}")
+    print('')
 
     
 def cal_tat(complete_df):
@@ -82,6 +86,8 @@ def cal_tat(complete_df):
     result['Queue'] = list(grouped_df['Total Delay'].max())
     result['Analysis'] = result['Turnaround'] - list(grouped_df['Total Delay'].max())
     complete_df = complete_df.merge(result, on='LMS #', how='left')
+    complete_df['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
+    complete_df['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
     #final_df['FI End'] = pd.to_datetime(final_df['FI End']).dt.to_period('m')
 
 #     final_df = complete_df[['Priority #', 'LMS #','TYPE', 'Product', 'JOB DESCRIPTION', 'Queue', 'Analysis', 'Start Duration', 'LMS Submission Date', 'FI End']]
@@ -99,6 +105,9 @@ def run_calculation(directory):
     imputed_df = read_imputed_data(directory)
     df, cancelled = get_cancelled_df(imputed_df)
     save_df_to_excel(cancelled, directory, 'Cancelled')
+    print('1. Summary of Jobs have been processed')
     analyse_jobs(df)
+    
     complete_df = cal_tat(df)
+    print('2. Turnaround time has been calculated')
     save_df_to_excel(complete_df, directory, 'Calculated')
