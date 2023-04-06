@@ -18,7 +18,9 @@ from pptx.util import Pt, Inches
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 
-from codes.Tool_Util_BU_Loading import ToolUtilBULoading
+from codes.tool_util_viz import ToolUtilViz
+from codes.technode_viz import TechNodeViz
+from codes.bu_viz import BUViz
 from codes.Anomaly_Detection import Anomaly_Detection
 from codes.TAT_QBreakdown_dashboard import TatQBreakdown
 
@@ -32,7 +34,7 @@ files = {
 file_names = ['Data/Singapore_Device_Priority_2022 - WW09']
 analyse_year = re.findall('\d+', file_names[0])[0]
 
-tool_excel_file = 'Data/Job Input Form_cleaned.xlsm'
+excel_file = 'Data/Job Input Form_cleaned.xlsm'
 anomaly_detection_file_path = 'Data/powerbi.xlsx'
 tat_qbreakdown_file_path = f'Data/Singapore_Device_Priority_{analyse_year} - Calculated.xlsx'
 tat_qbreakdown_file_path_cancelled = f'Data/Singapore_Device_Priority_{analyse_year} - Cancelled.xlsx'
@@ -44,7 +46,9 @@ class BuildDashboard:
     def __init__(self):
         self.tat_qbreakdown = TatQBreakdown(tat_qbreakdown_file_path, tat_qbreakdown_file_path_cancelled, ww)
         self.anomaly_detection = Anomaly_Detection(anomaly_detection_file_path)
-        self.tool_bu_dashboard = ToolUtilBULoading(files, tool_excel_file)
+        self.tool_util_viz = ToolUtilViz(files)
+        self.tech_node_viz = TechNodeViz(excel_file)
+        self.bu_viz = BUViz(excel_file)
         self.export_to_ppt = Button(description='Export KPI Graphs to PPT', button_style='warning', \
                                     layout = Layout(width='auto'))
         self.export_to_ppt1 = Button(description='Export All Graphs to PPT', button_style='warning', \
@@ -53,7 +57,7 @@ class BuildDashboard:
         self.export_to_ppt1.on_click(self.create_ppt_all)
         
         self.dashboard = Tab([self.tat_qbreakdown.kpi_tab, self.tat_qbreakdown.kpi_others_tab, \
-               self.tool_bu_dashboard.tab2, self.tool_bu_dashboard.tab3, self.tool_bu_dashboard.tab, self.anomaly_detection.tab])
+               self.bu_viz.tab, self.tool_util_viz.tab, self.tech_node_viz.tab, self.anomaly_detection.tab])
         [self.dashboard.set_title(i, title) for i, title in enumerate(self.tab_titles)]
         
         self.export = HBox([self.export_to_ppt, self.export_to_ppt1])
@@ -63,16 +67,16 @@ class BuildDashboard:
         turnaround_graph = self.tat_qbreakdown.kpi_tab.children[4]
         priority_graph = self.tat_qbreakdown.kpi_tab.children[7]
         csc_graph = self.tat_qbreakdown.kpi_tab.children[9]
-        bu_graph = self.tool_bu_dashboard.tab2.children[2]
-        tool_util = self.tool_bu_dashboard.tab3.children[2]
+        bu_graph = self.bu_viz.tab.children[2]
+        tool_util = self.tool_util_viz.tab.children[2]
         
         type_graph = self.tat_qbreakdown.kpi_others_tab.children[4]
         type_month_graph = self.tat_qbreakdown.kpi_others_tab.children[6]
         prod_graph = self.tat_qbreakdown.kpi_others_tab.children[8]
         
-        tech_node = self.tool_bu_dashboard.tab.children[1].children[0]
-        prod_dist = self.tool_bu_dashboard.tab.children[3].children[0].children[1]
-        failure_dist = self.tool_bu_dashboard.tab.children[3].children[1].children[1]
+        tech_node = self.tech_node_viz.tab.children[1].children[0]
+        prod_dist = self.tech_node_viz.tab.children[3].children[0].children[1]
+        failure_dist = self.tech_node_viz.tab.children[3].children[1].children[1]
         
         #os.makedirs(r'Output')  
         tool_util.write_image('Output/Tool Utilization.png')
