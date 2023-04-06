@@ -198,7 +198,7 @@ class TechNodeViz:
 		prod_freq_graph_new = self.plot_prod_graph(self.tech_node_dropdown.value)
 		self.prod_freq_graph.data[0]['x'] = prod_freq_graph_new.data[0]['x']
 		self.prod_freq_graph.data[0]['y'] = prod_freq_graph_new.data[0]['y']
-		self.prod_freq_graph.update_layout(title_text=f'Frequency of Product Names for {self.tech_node_dropdown.value}')
+		self.prod_freq_graph.update_layout(title_text=f'Count of Jobs by Product Names for {self.tech_node_dropdown.value}')
 
 	def refresh_fail_graph(self, evt):
 		"""
@@ -216,4 +216,4 @@ class TechNodeViz:
 		fail_freq_graph_new = self.plot_fail_graph(self.tech_node_dropdown.value, self.prod_name_dropdown.value)
 		self.fail_freq_graph.data[0]['x'] = fail_freq_graph_new.data[0]['x']
 		self.fail_freq_graph.data[0]['y'] = fail_freq_graph_new.data[0]['y']
-		self.fail_freq_graph.update_layout(title_text=f'Frequency of Failure for {self.prod_name_dropdown.value} in {self.tech_node_dropdown.value}')
+		self.fail_freq_graph.update_layout(title_text=f'Counts of Jobs for {self.prod_name_dropdown.value} in {self.tech_node_dropdown.value}')
