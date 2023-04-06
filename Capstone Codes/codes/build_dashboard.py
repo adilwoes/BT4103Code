@@ -1,16 +1,9 @@
 import re
-import os
-import copy
 import warnings
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
 warnings.filterwarnings("ignore")
 
-import ipywidgets as widgets
 from ipywidgets import Button, Layout, HBox, \
-        VBox, Tab, HTML, Dropdown, SelectMultiple
+        VBox, Tab
 import plotly.graph_objects as go
 
 from pptx import Presentation
