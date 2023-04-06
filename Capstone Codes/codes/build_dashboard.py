@@ -34,8 +34,38 @@ tat_qbreakdown_file_path_cancelled = f'Data/Singapore_Device_Priority_{analyse_y
 ww = 'Data/Work Week Calendar.xlsx'
 
 class BuildDashboard:
-    tab_titles = ['KPI', 'KPI (others)', 'BU Loading', 'Tool Utilization', \
+    """
+    A class for building a dashboard.
+
+    Attributes
+    ----------
+    TAB_TITLES : list
+        A list of tab titles for the dashboard. 
+    tat_qbreakdown : TatQBreakdown
+        An instance of TatQBreakdown.
+    anomaly_detection : Anomaly_Detection
+        An instance of Anomaly_Detection.
+    tool_util_viz : ToolUtilViz
+        An instance of ToolUtilViz.
+    tech_node_viz : TechNodeViz
+        An instance of TechNodeViz.
+    bu_viz : BUViz
+        An instance of BUViz.
+    export_to_ppt : Button
+        A button to export KPI graphs to PPT.
+    export_to_ppt1 : Button
+        A button to export all graphs to PPT.
+    dashboard : Tab
+        A Tab instance for the dashboard.
+    export : HBox
+        An HBox instance for the export.
+    app : VBox
+        A VBox instance for the app.
+    """
+
+    TAB_TITLES = ['KPI', 'KPI (others)', 'BU Loading', 'Tool Utilization', \
                   'Technology Nodes', 'Technology Anomaly Detection Rate']
+
     def __init__(self):
         self.tat_qbreakdown = TatQBreakdown(tat_qbreakdown_file_path, tat_qbreakdown_file_path_cancelled, ww)
         self.anomaly_detection = Anomaly_Detection(anomaly_detection_file_path)
@@ -51,12 +81,27 @@ class BuildDashboard:
         
         self.dashboard = Tab([self.tat_qbreakdown.kpi_tab, self.tat_qbreakdown.kpi_others_tab, \
                self.bu_viz.tab, self.tool_util_viz.tab, self.tech_node_viz.tab, self.anomaly_detection.tab])
-        [self.dashboard.set_title(i, title) for i, title in enumerate(self.tab_titles)]
+        [self.dashboard.set_title(i, title) for i, title in enumerate(self.TAB_TITLES)]
         
         self.export = HBox([self.export_to_ppt, self.export_to_ppt1])
         self.app = VBox([self.export, self.dashboard])
 
     def save_png_tab1(self):
+        """
+        Saves the images of various graphs and visualizations displayed in the tabs of the GUI.
+        This method retrieves the various graph and visualization objects from the GUI tabs and saves them as PNG images in a
+        new 'Output' directory. The saved images include the Tool Utilization, BU Loading, TAT, High Priority Queue Time
+        Breakdown, Overall Analysis Status, Type Breakdown, Type Breakdown by Month, Product Breakdown, Technology Node
+        Distribution, Technology Product Distribution, and Technology Failure Distribution graphs and visualizations.
+
+        Parameters:
+		-----------
+		None
+		
+		Returns:
+		--------
+		None
+        """
         turnaround_graph = self.tat_qbreakdown.kpi_tab.children[4]
         priority_graph = self.tat_qbreakdown.kpi_tab.children[7]
         csc_graph = self.tat_qbreakdown.kpi_tab.children[9]
@@ -88,6 +133,18 @@ class BuildDashboard:
 
 
     def create_ppt(self, evt):
+        """
+        Creates a PowerPoint presentation and adds saved PNG images to the first slide.
+        
+        Parameters:
+        -----------
+        evt : event object
+            Event object passed to the method.
+            
+        Returns:
+        --------
+        None
+        """
         self.save_png_tab1()
 
         X = Presentation('Powerpoint Output/SGP FI_KPI_Template.pptx')
@@ -118,6 +175,18 @@ class BuildDashboard:
         X.save('Powerpoint Output/SGP FI_KPI.pptx')  
         
     def create_ppt_all(self, evt):
+        """
+        Create a PowerPoint presentation with all the saved images from the dashboard.
+
+        Parameters:
+        -----------
+        evt : event object
+            Event object passed to the method.
+            
+        Returns:
+        --------
+        None
+        """
         self.save_png_tab1()
 
         X = Presentation('Powerpoint Output/SGP FI_KPI_Template.pptx')
