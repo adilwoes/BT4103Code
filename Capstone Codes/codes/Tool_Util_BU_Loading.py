@@ -1,7 +1,4 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime
-from ipywidgets import Button, Layout, HBox, VBox, Tab, HTML, Dropdown, DatePicker, Output
+from ipywidgets import Button, HBox, VBox, HTML, Dropdown
 import ipywidgets as widgets
 import plotly.graph_objects as go
 import warnings
@@ -89,33 +86,6 @@ class ToolUtilBULoading:
 
 		## ------------------------------ Ends here
 
-		##Tool Utilization Viz
-		self.output2 = widgets.Output()
-
-		self.all_weeks = sorted(self.tool_df.work_week.unique())
-		self.start_week_dropdown = Dropdown(
-			options=self.all_weeks, 
-			description='Start Week:', style={'description_width': 'initial'})
-		self.end_week_dropdown = Dropdown(
-			value=self.all_weeks[-1], 
-			options=self.all_weeks, 
-			description='End Week:', style={'description_width': 'initial'})
-
-		self.start_week_dropdown.observe(self.on_week_filter_change, names='value')
-		self.end_week_dropdown.observe(self.on_week_filter_change, names='value')
-
-		self.filtered_tool_df = self.tool_df[(self.tool_df['work_week'] >= self.start_week_dropdown.value) & (self.tool_df['work_week'] <= self.end_week_dropdown.value)]
-		self.util_chart = self.plot_weekly_util_rate(self.filtered_tool_df)
-
-		with self.output2:
-			display(self.util_chart)
-
-		self.util_graph = VBox([self.output2])
-		self.week_selector = HBox([self.start_week_dropdown, self.end_week_dropdown])
-		self.tab3 = VBox([self.TITLE_4, self.week_selector, self.util_chart])
-
-	## ------------------------------ Ends here
-
 	## Tech Node, Product and Failure Distribution Plotting Methods -- starts here
 	def plot_tn_graph(self):
 		tech_node_freq = self.auto_df['technology node'].value_counts()
@@ -191,34 +161,3 @@ class ToolUtilBULoading:
 			self.stacked_barchart.data[4]['x'] = stacked_barchart.data[4]['x']
 			self.stacked_barchart.data[4]['y'] = stacked_barchart.data[4]['y'] 
 			stacked_barchart.show()
-
-	## ------------------------------ Ends here
-
-	## Tool Utilization Plotting Methods
-	def plot_weekly_util_rate(self, df):
-		layout = go.Layout(title='Tool Utilization Rate', template='plotly_white', yaxis=dict(tickformat=".0%"))
-
-		util_rate_graph = go.FigureWidget(layout=layout)
-
-		for tool in df.tool.unique():
-			temp_tool = df.loc[df.tool == tool]
-			util_rate_graph.add_scatter(y=temp_tool.final_rate, x=temp_tool.work_week, name=tool)
-
-		return util_rate_graph
-
-	def on_week_filter_change(self, change):
-		with self.output2:
-			clear_output(wait=True)
-			filtered_tool_df = self.tool_df.loc[(self.tool_df.work_week >= self.start_week_dropdown.value) & (self.tool_df.work_week <= self.end_week_dropdown.value)]
-			weekly_util_graph = self.plot_weekly_util_rate(filtered_tool_df)
-			self.util_chart.data[0]['x'] = weekly_util_graph.data[0]['x']
-			self.util_chart.data[0]['y'] = weekly_util_graph.data[0]['y']
-			self.util_chart.data[1]['x'] = weekly_util_graph.data[1]['x']
-			self.util_chart.data[1]['y'] = weekly_util_graph.data[1]['y']
-			self.util_chart.data[2]['x'] = weekly_util_graph.data[2]['x']
-			self.util_chart.data[2]['y'] = weekly_util_graph.data[2]['y']           
-			weekly_util_graph.show()
-
-	## ------------------------------ Ends here
-
-
