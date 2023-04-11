@@ -108,7 +108,7 @@ class ToolUtilViz:
         evt: dict
             A dictionary containing information about the event that triggered the update.
         """
-        with self.output2:
+        with self.output:
             clear_output(wait=True)
             filtered_tool_df = self.tool_df.loc[(self.tool_df.work_week >= self.start_week_dropdown.value) & (self.tool_df.work_week <= self.end_week_dropdown.value)]
             weekly_util_graph = self.plot_weekly_util_rate(filtered_tool_df)
