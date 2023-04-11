@@ -99,7 +99,9 @@ def save_df_to_excel(final_df, directory, title):
     file_names = ['Singapore_Device_Priority_2022 - WW09']
     #file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
     analyse_year = re.findall('\d+', file_names[0])[0]
-    final_df.to_excel(f'Data/Singapore_Device_Priority_{analyse_year} - {title}.xlsx', index=False)
+    name = f'Data/Singapore_Device_Priority_{analyse_year} - {title}.xlsx'
+    final_df.to_excel(name, index=False)
+    return name
     
 def run_calculation(directory):
     imputed_df = read_imputed_data(directory)
@@ -110,4 +112,5 @@ def run_calculation(directory):
     
     complete_df = cal_tat(df)
     print('2. Turnaround time has been calculated')
-    save_df_to_excel(complete_df, directory, 'Calculated')
+    name = save_df_to_excel(complete_df, directory, 'Calculated')
+    print(f'3. Calculated Data is outputted in Excel \n at {directory} \n as {name}')

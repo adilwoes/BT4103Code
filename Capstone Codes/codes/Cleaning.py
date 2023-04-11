@@ -89,7 +89,9 @@ def remove_irrelevant_rows(df):
 
 def save_to_excel(df, file_names):
     analyse_year = re.findall('\d+', file_names[0])[0]
-    df.to_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx', index=False)
+    name = f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx'
+    df.to_excel(name, index=False)
+    return name
     
 def get_jobs_missing_data(final_df):
     #get job ids with missing 'LMS Submission Date'
@@ -143,7 +145,9 @@ def save_missing_to_excel(df, file_names, missing, directory):
     
     analyse_year = re.findall('\d+', file_names[0])[0]
 
-    missing_df.to_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx', index=False, header=['LMS #','LMS Submission Date','FI Start', 'FI Interim/ Resume','FI End', 'FI Pause', 'FI Resume'])  
+    name = f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx'
+    missing_df.to_excel(name, index=False, header=['LMS #','LMS Submission Date','FI Start', 'FI Interim/ Resume','FI End', 'FI Pause', 'FI Resume'])  
+    return name
                           
 def run_clean(directory):
     df, file_names = read_data(directory)
@@ -154,7 +158,7 @@ def run_clean(directory):
     final_df = remove_irrelevant_rows(final_df)
     print('3. Irrelevant jobs (e.g. PFA only jobs are removed')
     missing = get_jobs_missing_data(final_df)
-    save_to_excel(final_df, file_names)
-    print('4. Missing Data is outputted in Excel')
-    save_missing_to_excel(final_df, file_names, missing, directory)  
-    print('5. Cleaned Data is outputted in Excel')
+    name = save_to_excel(final_df, file_names)
+    print(f'4. Missing Data is outputted in Excel at \n {directory} \n as {name}')
+    name = save_missing_to_excel(final_df, file_names, missing, directory)  
+    print(f'5. Cleaned Data is outputted in Excel at \n {directory} \n as {name}')

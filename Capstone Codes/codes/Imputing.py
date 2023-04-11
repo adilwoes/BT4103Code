@@ -468,7 +468,9 @@ def cal_delays(final_df):
 
 def save_imputed_to_excel(final_df, file_names):
     analyse_year = re.findall('\d+', file_names[0])[0]
-    final_df.to_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx', index=False)
+    name = f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx'
+    final_df.to_excel(name, index=False)
+    return name
     
 def run_impute(directory):
     df, ww_calendar, data_update, file_names = read_cleaned_data(directory)
@@ -487,4 +489,5 @@ def run_impute(directory):
     print('6. Smart Inference excuted for FI Pause and Resume')
     formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     formatted_df = cal_delays(formatted_df)
-    save_imputed_to_excel(formatted_df, file_names)
+    name = save_imputed_to_excel(formatted_df, file_names)
+    print(f'7. Imputed Data is outputted in Excel at \n {directory} \n as {name}')
