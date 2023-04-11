@@ -102,15 +102,15 @@ class BuildDashboard:
 		--------
 		None
         """
-        turnaround_graph = self.tat_qbreakdown.kpi_tab.children[4]
-        priority_graph = self.tat_qbreakdown.kpi_tab.children[7]
-        csc_graph = self.tat_qbreakdown.kpi_tab.children[9]
+        turnaround_graph = self.tat_qbreakdown.kpi_tab.children[5]
+        priority_graph = self.tat_qbreakdown.kpi_tab.children[8]
+        csc_graph = self.tat_qbreakdown.kpi_tab.children[10]
         bu_graph = self.bu_viz.tab.children[2]
         tool_util = self.tool_util_viz.tab.children[2]
         
-        type_graph = self.tat_qbreakdown.kpi_others_tab.children[4]
-        type_month_graph = self.tat_qbreakdown.kpi_others_tab.children[6]
-        prod_graph = self.tat_qbreakdown.kpi_others_tab.children[8]
+        type_graph = self.tat_qbreakdown.kpi_others_tab.children[5]
+        type_month_graph = self.tat_qbreakdown.kpi_others_tab.children[7]
+        prod_graph = self.tat_qbreakdown.kpi_others_tab.children[9]
         
         tech_node = self.tech_node_viz.tab.children[1].children[0]
         prod_dist = self.tech_node_viz.tab.children[3].children[0].children[1]
