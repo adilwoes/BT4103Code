@@ -19,8 +19,8 @@ def get_cancelled_df(df):
     #remove cancelled items, for analysis later
     cancelled = df[df['STATUS'] == 'CANCELLED']
     df = df[~df['LMS #'].isin(cancelled['LMS #'].unique())]
-    cancelled['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in cancelled['FI End']]
-    cancelled['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in cancelled['FI End']]
+    cancelled['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in cancelled['LMS Submission Date']]
+    cancelled['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in cancelled['LMS Submission Date']]
     return df, cancelled
 
 def analyse_jobs(df):
@@ -72,15 +72,10 @@ def cal_tat(complete_df):
     grouped_df = complete_df.groupby(['LMS #'])
 
     # Calculate the duration for each group by subtracting the minimum FI start date from the maximum FI end date
-
     turnaround = grouped_df['FI End'].max() - grouped_df['LMS Submission Date'].min()
-
     project_start = grouped_df['FI Start'].min() - grouped_df['LMS Submission Date'].min()
-
     result = pd.concat([turnaround, project_start], axis=1).reset_index()
-
     result.columns = ['LMS #', 'Turnaround','Start Duration']
-
     result['Start Duration'] = [x.days if x != pd.NaT else pd.NaT for x in result['Start Duration']]
     result['Turnaround'] = [x.days if x != pd.NaT else pd.NaT for x in result['Turnaround']]
     result['Queue'] = list(grouped_df['Total Delay'].max())
@@ -88,10 +83,6 @@ def cal_tat(complete_df):
     complete_df = complete_df.merge(result, on='LMS #', how='left')
     complete_df['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
     complete_df['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
-    #final_df['FI End'] = pd.to_datetime(final_df['FI End']).dt.to_period('m')
-
-#     final_df = complete_df[['Priority #', 'LMS #','TYPE', 'Product', 'JOB DESCRIPTION', 'Queue', 'Analysis', 'Start Duration', 'LMS Submission Date', 'FI End']]
-#     final_df = final_df.drop_duplicates()
     
     return complete_df
 

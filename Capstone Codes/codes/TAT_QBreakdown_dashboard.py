@@ -77,15 +77,15 @@ class TatQBreakdown:
         self.ww_year_end_widget = widgets.Dropdown(options=self.workyear, value=self.workyear[-1], 
                                                    description='Work Year (End)', disabled=False, \
                                                    style={'description_width': 'initial'})
-
-        self.ww_start_widget = widgets.IntSlider(value=1, min=1, max=max(self.workweek), step=1,\
-                                                 description='Work Week (Start):', 
-                                                 disabled=False, style={'description_width': 'initial'})
               
         self.ww_year_end_widget1 = widgets.Dropdown(options=self.workyear, value=self.workyear[-1], \
                                                     description='Work Year (End)',\
                                                    disabled=False, style={'description_width': 'initial'})
-              
+        
+        self.ww_start_widget = widgets.IntSlider(value=1, min=1, max=max(self.workweek), step=1,\
+                                                 description='Work Week (Start):', 
+                                                 disabled=False, style={'description_width': 'initial'})
+        
         self.ww_start_widget1 = widgets.IntSlider(value=1, min=1,max=max(self.workweek), step=1,\
                                                  description='Work Week (Start):', disabled=False, \
                                                  style={'description_width': 'initial'})
@@ -137,7 +137,7 @@ class TatQBreakdown:
 
     def get_month_end_demand(self, df):
         earliest_d = df['LMS Submission Date'].min()
-        latest_d = df['LMS Submission Date'].max()
+        latest_d = df['FI End'].max()
         months = (latest_d.year - earliest_d.year) * 12 + latest_d.month - earliest_d.month
         open_jobs_df = df.groupby(['LMS #']).first()
         month_end_dd = pd.DataFrame()
@@ -176,7 +176,7 @@ class TatQBreakdown:
         turnaround_graph.add_bar(y=df_res['Analysis'], x = df_res['FI End'], name='Analysis', \
                                  marker_color = '#104E8B', yaxis='y1')
         
-        turnaround_graph.add_bar(y=df_res['Queue'], x = df_res['FI End'], name= 'Queue', marker_color = '#8B1A1A', yaxis='y1')
+        turnaround_graph.add_bar(y=df_res['Queue'], x = df_res['FI End'], name = 'Queue', marker_color = '#8B1A1A', yaxis='y1')
         
         turnaround_graph.add_scatter(y=[10] * len(df_res['Analysis']), x = df_res['FI End'],\
                                      name= 'KPI Goal', line=dict(color='#A2CD5A', width=3), mode='lines',yaxis='y1')
@@ -188,23 +188,20 @@ class TatQBreakdown:
 
     def get_monthly_completed_submitted(self, df, cancelled):
         #jobs completed, submitted, cancelled
-        cancelled = cancelled.groupby('LMS #').max().loc[:,['FI End']]
+        cancelled = cancelled.groupby('LMS #').max().loc[:,['LMS Submission Date']]
         completed = df.groupby('LMS #').last().loc[:,['LMS Submission Date','FI End']]
-        #completed['FI End'] = pd.to_datetime(completed['FI End'], errors='coerce')
-        #completed['LMS Submission Date'] = pd.to_datetime(completed['LMS Submission Date'], errors='coerce')
-        completedd = completed.groupby(completed['FI End'].dt.strftime('%Y-%m'))\
+        completedd = completed.loc[:,['FI End']].groupby(completed['FI End'].dt.strftime('%Y-%m'))\
                             .count()\
                             .rename(columns={'FI End': 'Count'})\
                             .reset_index()
 
-        submitted = completed.groupby(completed['LMS Submission Date'].dt.strftime('%Y-%m'))\
+        submitted = completed.loc[:,['LMS Submission Date']].groupby(completed['LMS Submission Date'].dt.strftime('%Y-%m'))\
                             .count()\
                             .rename(columns={'LMS Submission Date': 'Count'})\
                             .reset_index()
-
-        cancelledd = cancelled.groupby(cancelled['FI End'].dt.strftime('%Y-%m'))\
+        cancelledd = cancelled.groupby(cancelled['LMS Submission Date'].dt.strftime('%Y-%m'))\
                         .count()\
-                        .rename(columns={'FI End': 'Count'})\
+                        .rename(columns={'LMS Submission Date': 'Count'})\
                         .reset_index()
         month_end_dem = self.get_month_end_demand(df)
         layout = go.Layout(title='Overall Analysis Status', xaxis_title='Month', \
@@ -214,7 +211,7 @@ class TatQBreakdown:
         csc_graph.add_bar(y=submitted['Count'], x = submitted['LMS Submission Date'], marker_color = '#008000',\
                           name='Submitted')
         csc_graph.add_bar(y=completedd['Count'], x = completedd['FI End'], name='Completed', marker_color = '#D2691E')
-        csc_graph.add_bar(y=cancelledd['Count'], x = cancelledd['FI End'], name='Cancelled', marker_color='#7AC5CD')
+        csc_graph.add_bar(y=cancelledd['Count'], x = cancelledd['LMS Submission Date'], name='Cancelled', marker_color='#7AC5CD')
         csc_graph.add_scatter(y=month_end_dem['Count'], x = month_end_dem.index, name='Month End Demand', mode='lines')
         return csc_graph
 
@@ -314,11 +311,14 @@ class TatQBreakdown:
             for val in not_in:
                 graph_df = graph_df[graph_df['Priority #'] != val]
 
-        graph_df = graph_df[(graph_df['FI End Week'] >= self.ww_start_widget.value) & \
-                            (graph_df['FI End Year'] >= self.ww_year_start_widget.value)]
+        graph_df = graph_df[~(graph_df['FI End Year'] < self.ww_year_start_widget.value)]
+        graph_df = graph_df[~(graph_df['FI End Year'] > self.ww_year_end_widget.value)]
+        
+        graph_df = graph_df[~((graph_df['FI End Week'] <= self.ww_start_widget.value) & \
+                            (graph_df['FI End Year'] == self.ww_year_start_widget.value))]
 
-        graph_df = graph_df[(graph_df['FI End Week'] <= self.ww_end_widget.value) & \
-                        (graph_df['FI End Year'] <= self.ww_year_end_widget.value)]
+        graph_df = graph_df[~((graph_df['FI End Week'] >= self.ww_end_widget.value) & \
+                        (graph_df['FI End Year'] == self.ww_year_end_widget.value))]
         return graph_df
 ## ------------------------------ READ TAT TABLE FUNCTIONS
     def read_tat_data(self, evt):
@@ -334,8 +334,12 @@ class TatQBreakdown:
         tat_data = self.get_cycle_time_graph(graph_df).data
         self.turnaround_graph.data[0]['y'] = tat_data[0]['y']
         self.turnaround_graph.data[1]['y'] = tat_data[1]['y']
+        self.turnaround_graph.data[2]['y'] = tat_data[2]['y']
+        self.turnaround_graph.data[3]['y'] = tat_data[3]['y']
         self.turnaround_graph.data[0]['x'] = tat_data[0]['x']
         self.turnaround_graph.data[1]['x'] = tat_data[1]['x']
+        self.turnaround_graph.data[2]['x'] = tat_data[2]['x']
+        self.turnaround_graph.data[3]['x'] = tat_data[3]['x']
         self.export_cycle_time_data(tat_data[0]['y'], \
                                tat_data[1]['y'], \
                                tat_data[1]['x'], tat_data[2]['y'])

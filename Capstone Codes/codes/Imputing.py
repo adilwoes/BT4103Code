@@ -30,7 +30,7 @@ def read_cleaned_data(directory):
     analyse_year = re.findall('\d+', file_names[0])[0]
     
     df = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx')
-    data_update = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx', sheet_name = 'Python Import')
+    data_update = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data1.xlsx', sheet_name = 'Python Import')
  
     ww_calendar = pd.read_excel('Data/Work Week Calendar.xlsx')
    
@@ -48,7 +48,10 @@ def update_missing_data(df, data_update, file_names):
     for job in fi_impute:
         index = df.index[(df['LMS #'] == job) & (df['STATUS'] == 'COMPLETED')]
         index = df.index[(df['LMS #'] == job) & (df['STATUS'] == 'COMPLETED')][0]
-        df.loc[index,'FI Interim/ Resume'] = data_update[data_update['LMS #'] == job]['FI Interim'].values[-1]
+        new_interim = data_update[data_update['LMS #'] == job]['FI Interim'].values[-1]
+        if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'],str):
+            if (new_interim not in df.loc[index,'FI Interim/ Resume']):
+                df.loc[index,'FI Interim/ Resume'] = new_interim
 
         #correct fi start for all observations
         index_start = df.index[(df['LMS #'] == job)]
@@ -66,7 +69,10 @@ def update_missing_data(df, data_update, file_names):
             c = group.iloc[0]['all_grp'].count('FI')
             fi_end = group.iloc[c-1]
             index = fi_end.name
-            df.loc[index,'FI Interim/ Resume'] = data_update[data_update['LMS #'] == name]['FI Interim'].values[-1]
+            new_interim = data_update[data_update['LMS #'] == name]['FI Interim'].values[-1]
+            if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'],str):
+                if (new_interim not in df.loc[index,'FI Interim/ Resume']):
+                    df.loc[index,'FI Interim/ Resume'] = new_interim
 
             #correct fi start for all observations
             index_start = df.index[(df['LMS #'] == name)]
@@ -96,114 +102,172 @@ def format_dates(df, file_names):
     #create a new object of clean_df
     df.reset_index(inplace=True,drop=True)
     final_df = copy.deepcopy(df)
+    df = df.groupby(['LMS #'], as_index=False)
+    
 
-    for index, row in df.iterrows():
-        new = []
-        col_error = []
-        for col in date_col:
-            ele = row[col]
-            #readable date/datetime value
-            if isinstance(ele, datetime) and not pd.isnull(ele): 
-                new.append(ele)
-            elif isinstance(ele, str) and not ele.isalpha():
-                dates = re.split('\n', ele)
-                formatted_dates = []
-                #iterate through to check soundness of data
-                for d in dates: 
-                    indiv = re.split('/', d)
+    for name, group in df:
+        for index, row in group.iterrows():
+            new = []
+            col_error = []
+            for col in date_col:
+                ele = row[col]
+                if isinstance(ele, datetime):
                     # 2 reasons why data is not read as datetime (1. date has error 2. date not in d/m/y format)
-
-                    #1. data has error
-                    #check if year is wrong
-                    year = indiv[-1]
-                    analyse_year = re.findall('\d+', file_names[0])[0]
-                    error = False
-                    if (len(year) != 4) | (int(year) < int(analyse_year)-1) | (int(year) > int(analyse_year)+1):
-                        col_error.append((dates.index(d),col,'year'))
-                        formatted_dates.append(d)
-                        error = True
-
-                    #check if day/month is wrong
-                    if (int(indiv[0]) > 12) & (int(indiv[1]) > 12):
-                        col_error.append((dates.index(d),col,'month'))
-                        formatted_dates.append(d)
-                        error = True
-
-                    #2. data not in d/m/y format
-                    if not error:
+                    if pd.notnull(ele):
+                        #1. data has error
+                        #check if year is wrong
+                        year = int(ele.year)
+                        error = False
                         try:
-                            temp = pd.to_datetime(datetime.strptime(d,'%m/%d/%Y'))
+                            analyse_year = group['LMS Submission Date'].max()
+                            if isinstance(analyse_year, str):
+                                analyse_year = datetime.strptime(analyse_year, '%m/%d/%Y')
+                            analyse_year = analyse_year.year 
                         except:
                             try:
-                                temp = pd.to_datetime(datetime.strptime(d,'%d/%m/%Y'))
+                                analyse_year = group['FI Start'].max()
+                                if isinstance(analyse_year, str):
+                                    analyse_year = datetime.strptime(analyse_year, '%m/%d/%Y')
+                                analyse_year = analyse_year.year
                             except:
-                                ele = ele[:10]
-                                temp = pd.to_datetime(datetime.strptime(d,'%Y-%m-%d')) 
-                        formatted_dates.append(temp)
+                                analyse_year = row['Work Year']
+                            
 
-                if len(formatted_dates) == 1:
-                    new.append(formatted_dates[0])   
+                        if (list(group.index).index(index) == 0) & (year != analyse_year):
+                            col_error.append((ele,col,'year'))
+                            error = True
+                        elif (year < int(analyse_year)-1) | (year > int(analyse_year)+1):
+                            col_error.append((ele,col,'year'))
+                            error = True
+                    new.append(ele)
+ 
+
+                elif (isinstance(ele, str) and not ele.isalpha()):
+                    dates = re.split('\n', ele)
+                    formatted_dates = []
+                    #iterate through to check soundness of data
+                    for d in dates: 
+                        indiv = re.split('/', d)
+                        # 2 reasons why data is not read as datetime (1. date has error 2. date not in d/m/y format)
+
+                        #1. data has error
+                        #check if year is wrong
+                        year = indiv[-1]
+                        try:
+                            analyse_year = group['LMS Submission Date'].max()
+                            if isinstance(analyse_year, str):
+                                analyse_year = datetime.strptime(analyse_year, '%m/%d/%Y')
+                            analyse_year = analyse_year.year 
+                        except:
+                            try:
+                                analyse_year = group['FI Start'].max()
+                                if isinstance(analyse_year, str):
+                                    analyse_year = datetime.strptime(analyse_year, '%m/%d/%Y')
+                                analyse_year = analyse_year.year
+                            except:
+                                analyse_year = row['Work Year']
+
+                        error = False
+                        if (list(group.index).index(index) == 0) & (int(year) != analyse_year):
+                            col_error.append((dates.index(d),col,'year'))
+                            formatted_dates.append(d)
+                            error = True
+                        elif (len(year) != 4) | (int(year) < int(analyse_year)-1) | (int(year) > int(analyse_year)+1):
+                            col_error.append((dates.index(d),col,'year'))
+                            formatted_dates.append(d)
+                            error = True
+
+                        #check if day/month is wrong
+                        if (int(indiv[0]) > 12) & (int(indiv[1]) > 12):
+                            col_error.append((dates.index(d),col,'month'))
+                            formatted_dates.append(d)
+                            error = True
+
+                        #2. data not in d/m/y format
+                        if not error:
+                            try:
+                                temp = pd.to_datetime(datetime.strptime(d,'%m/%d/%Y'))
+                            except:
+                                try:
+                                    temp = pd.to_datetime(datetime.strptime(d,'%d/%m/%Y'))
+                                except:
+                                    ele = ele[:10]
+                                    temp = pd.to_datetime(datetime.strptime(d,'%Y-%m-%d')) 
+                            formatted_dates.append(temp)
+
+                    if len(formatted_dates) == 1:
+                        new.append(formatted_dates[0])   
+                    else:
+                        new.append(formatted_dates)
+
                 else:
-                    new.append(formatted_dates)
+                    new.append(pd.NaT)
 
-            else:
-                new.append(pd.NaT)
+            #fix day/month/ year error here
+            if len(col_error) > 0:
+                for err in col_error:
+                    col_name = err[1]
 
-        #fix day/month/ year error here
-        if len(col_error) > 0:
-            for err in col_error:
-                col_name = err[1]
+                    error_val = new[date_col.index(col_name)]
+                    is_list = False
 
-                error_val = new[date_col.index(col_name)]
-                is_list = False
+                    #check if error_val is a list (in the case of fi interim/ resume)
+                    if isinstance(error_val, list):
+                        error_val = error_val[err[0]]
+                        is_list=True
+                    elif isinstance(error_val, datetime) & pd.notnull(error_val):
+                        error_val = error_val.strftime('%m/%d/%Y')
 
-                #check if error_val is a list (in the case of fi interim/ resume)
-                if not isinstance(error_val, str):
-                    error_val = error_val[err[0]]
-                    is_list=True
+                    indiv = re.split('/', error_val)
+                    lms_date = new[date_col.index('LMS Submission Date')]
 
-                indiv = re.split('/', error_val)
-                lms_date = new[date_col.index('LMS Submission Date')]
+                    #year error
+                    if err[2] == 'year':
+                        if list(group.index).index(index) == 0:
+                            indiv[2] = str(row['Work Year'])
+                        elif isinstance(lms_date, datetime) and (lms_date != pd.NaT):
+                            indiv[2] = str(new[date_col.index('LMS Submission Date')].date().year)
+                        else: 
+                            indiv[2] = str(row['Work Year'])
+                        corrected = '/'.join(indiv)
+                        corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
+                        sub = new[date_col.index('LMS Submission Date')]
+       
+                        if isinstance(sub,str):
+                            sub = datetime.strptime(sub,'%m/%d/%Y')
+                        
+                        if (corrected_date.date() < sub.date()) & (int(indiv[1]) < 3):
+                            indiv[2] = str(new[date_col.index('LMS Submission Date')].date().year+1)
+                            corrected = '/'.join(indiv)
+                            corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
 
-                #year error
-                if err[2] == 'year':
-                    if isinstance(lms_date, datetime) and (lms_date != pd.NaT):
-                        indiv[2] = str(new[date_col.index('LMS Submission Date')].date().year)
-                    corrected = '/'.join(indiv)
-                    corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
-
-                    if (corrected_date.date() < new[date_col.index('LMS Submission Date')].date()) & (int(indiv[1]) < 3):
-                        indiv[2] = str(new[date_col.index('LMS Submission Date')].date().year+1)
+                    # day/month error (assume it is error in month)
+                    if err[2] == 'month':
+                        if isinstance(lms_date, datetime) and (lms_date != pd.NaT):
+                            indiv[0] = str(new[date_col.index('LMS Submission Date')].date().month)
                         corrected = '/'.join(indiv)
                         corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
 
-                # day/month error (assume it is error in month)
-                if err[2] == 'month':
-                    if isinstance(lms_date, datetime) and (lms_date != pd.NaT):
-                        indiv[0] = str(new[date_col.index('LMS Submission Date')].date().month)
-                    corrected = '/'.join(indiv)
-                    corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
+                        if (corrected_date.date() < new[date_col.index('LMS Submission Date')].date()):
+                            indiv[0] = str(new[date_col.index('LMS Submission Date')].date().month+1) #rethink logic
+                            corrected = '/'.join(indiv)
+                            corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
 
-                    if (corrected_date.date() < new[date_col.index('LMS Submission Date')].date()):
-                        indiv[0] = str(new[date_col.index('LMS Submission Date')].date().month+1) #rethink logic
-                        corrected = '/'.join(indiv)
-                        corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
+                    if is_list:
+                        new[date_col.index(col_name)][err[0]] = corrected_date
+                    else: 
+                        new[date_col.index(col_name)] = corrected_date
 
-                if is_list:
-                    new[date_col.index(col_name)][err[0]] = corrected_date
-                else: 
-                    new[date_col.index(col_name)] = corrected_date
+            for i in range(len(date_col)):   
+                update = new[i]
+                if isinstance(update, list):
+                    update_new = ''
+                    for d in update:
+                        update_new = update_new + d.strftime("%Y-%m-%d") + '\n'
 
-        for i in range(len(date_col)):   
-            update = new[i]
-            if isinstance(update, list):
-                update_new = ''
-                for d in update:
-                    update_new = update_new + d.strftime("%Y-%m-%d") + '\n'
-
-                final_df.loc[index,date_col[i]] = update_new[:-1]
-            else:
-                final_df.loc[index,date_col[i]] = update
+                    final_df.loc[index,date_col[i]] = update_new[:-1]
+                else:
+                    final_df.loc[index,date_col[i]] = update
     return final_df
 
 def fill_resume_pause(final_df):
@@ -242,7 +306,7 @@ def fill_resume_pause(final_df):
 
 def format_incoming_jobs(final_df, ww_calendar):
     #handle incoming status
-    incoming_df = final_df[(final_df['LMS #'] == 'INCOMING')& (final_df['GRP'] == 'FI')]
+    incoming_df = final_df[(final_df['LMS #'] == 'INCOMING') & (final_df['GRP'] == 'FI')]
     #remove duplicate incoming status 
     incoming_df = incoming_df.drop_duplicates(subset=incoming_df.columns.difference(['Work Week']))
     final_df = final_df[(final_df['LMS #'] != 'INCOMING')]
@@ -274,7 +338,7 @@ def format_incoming_jobs(final_df, ww_calendar):
         row['LMS Submission Date'] = start_d
         row['FI Start'] = pd.NaT
         row['FI Interim/ Resume'] = pd.NaT
-        row['FI End'] = start_d 
+        row['FI End'] = pd.NaT 
         row['FI Pause'] = pd.NaT    
         row['FI Resume'] = pd.NaT 
         final_df = pd.concat([final_df,pd.DataFrame(row).T.reset_index(drop=True)]).reset_index(drop=True)
@@ -317,7 +381,7 @@ def format_cancelled_jobs(final_df, ww_calendar):
             row_data['LMS Submission Date'] = start_d
             row_data['FI Start'] = pd.NaT
             row_data['FI Interim/ Resume'] = pd.NaT
-            row_data['FI End'] = start_d
+            row_data['FI End'] = pd.NaT
             row_data['FI Pause'] = pd.NaT    
             row_data['FI Resume'] = pd.NaT 
 
@@ -337,14 +401,21 @@ def infer_fi_resume(final_df):
             if (row['LMS #'] != 'INCOMING') & (row['STATUS'] != 'CANCELLED'):
                 fi_count = row['all_grp'].count('FI')
                 curr_index = list(group.index).index(index)
-
-                if  on_hold & (pd.notnull(row['FI Pause'])):
-                    final_df.loc[index,'FI Resume'] = row['FI Pause']
-                    on_hold = False
-                    if (pd.notnull(row['LMS Submission Date'])):
-                        final_df.loc[index,'FI Pause'] = row['LMS Submission Date']
-                    else: 
-                        final_df.loc[index,'FI Pause'] = row['FI Start']
+                
+                #for jobs immediately put on hold, impute pause and resume with lms submission and fi start
+                if (curr_index == 0) & (('HOLD' in row['STATUS']) | (('QUEUE' in row['STATUS']) | ('NAN' in row['STATUS']))):
+                    final_df.loc[index,'FI Pause'] = row['LMS Submission Date']
+                    min_resume_null = list(group['FI Pause'])
+                    min_resume = [x for x in min_resume_null if pd.notnull(x)]   
+                    if (len(min_resume) > 1):
+                        if (final_df.loc[index,'FI Pause'] != min_resume[1]):
+                            #ind = list(group.index)[min_resume_null.index(min_resume[1])]
+                            final_df.loc[index,'FI Resume'] = min_resume[1]
+                            used = min_resume[1]
+                            #final_df.loc[ind,'FI Pause'] = pd.NaT
+                            
+                    else:                            
+                        final_df.loc[index,'FI Resume'] = row['FI Start']
 
                 #used as end resume date in previous observation
                 elif final_df.loc[index,'FI Pause'] == used:
@@ -391,7 +462,8 @@ def infer_fi_resume(final_df):
                             final_df.loc[index,'FI Resume'] = final_df.loc[next_index,'FI End']
 
                 #if not null then remove duplicates
-                elif ((pd.notnull(row['FI Pause'])) & ((pd.notnull(row['FI Resume'])) & (curr_index < fi_count-1))):
+                elif ((pd.notnull(row['FI Pause'])) & (((pd.notnull(row['FI Resume'])) & \
+                                                       (curr_index < len(list(group.index))-1)))):
                     next_index = list(group.index)[curr_index+1]
                     if ((final_df.loc[index,'FI Pause'] == final_df.loc[next_index,'FI Pause']) & \
                     (final_df.loc[index,'FI Resume'] == final_df.loc[next_index,'FI Resume'])):
@@ -431,23 +503,34 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
     #fill in all rows with fi end and lms submission
     group_final_df = final_df.groupby(['LMS #'], as_index=False)
     for name, group in group_final_df:
-        start_date = group['LMS Submission Date'].min()
-#         if pd.isnull(start_date):
-#             ww = int(group['Work Week'].min())
-#             y = int(group['Work Year'].min())
-#             ww_calendar = ww_calendar[ww_calendar['Year'] == y]
-#             m_ww = 'Dec'
-#             for i in range(1,len(ww_calendar)):
-#                 if ww_calendar.iloc[0,i] >= m:
-#                     m_ww = ww_calendar.columns[i]
-#                     break
-#             m = month_dict[m_ww]
-#             start_d = datetime(int(y),int(m),1)
+        submission_date = group['LMS Submission Date'].min()
         end_date = group['FI End'].max()
-
+        start_date = group['FI Start'].min()
+        if pd.isnull(submission_date):
+            ww = int(group['Work Week'].min())
+            y = int(group['Work Year'].min())
+            ww_calendar = ww_calendar[ww_calendar['Year'] == y]
+            m_ww = 'Dec'
+            for i in range(1,len(ww_calendar)):
+                if ww_calendar.iloc[0,i] >= ww:
+                    m_ww = ww_calendar.columns[i]
+                    break
+            m = month_dict[m_ww]
+            submission_date = datetime(int(y),int(m),1)
+            
+        if pd.notnull(start_date):
+            #validation
+            if submission_date > start_date:
+                submission_date = start_date
+                
+        elif pd.notnull(end_date):
+            if submission_date > end_date:
+                submission_date = end_date
+                
         for index, row in group.iterrows():
-            final_df.loc[index,'LMS Submission Date'] = start_date
+            final_df.loc[index,'LMS Submission Date'] = submission_date
             final_df.loc[index,'FI End'] = end_date
+            final_df.loc[index,'FI Start'] = start_date
     return final_df
 
 def cal_delays(final_df):
@@ -480,6 +563,7 @@ def run_impute(directory):
     print('2. All dates are standardised')
     #formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     formatted_df = fill_resume_pause(formatted_df)
+    formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     print('3. Resume and Pause Columns are filled')
     formatted_df = format_incoming_jobs(formatted_df, ww_calendar)
     print('4. Incoming Jobs are formatted')
