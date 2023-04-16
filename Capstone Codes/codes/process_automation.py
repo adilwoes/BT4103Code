@@ -163,7 +163,7 @@ class ProcessToolUtilization:
 
 	def __init__(self, tool_files, psd_filepath):
 		self.tool_files = tool_files
-		self.psd_filepath = psd_filepath
+		self.psd = self.get_psd_dates(psd_filepath)
 		self.tools_df = self.parse_files()
 		self.processed_df = self.preprocess()
 		self.final_df = self.format_util_rate_monthly()
@@ -418,7 +418,7 @@ class ProcessToolUtilization:
 			util = tool_df.groupby(['date', 'tool', 'project_cleaned']).aggregate({'timezone': lambda x: x.nunique()}).reset_index()
 			util = util.drop_duplicates(subset=['date'], keep='first')
 			util = util.set_index('date').resample('D').asfreq().fillna(value={'timezone': 0, 'tool': tool, 'project_cleaned': 'tool_not_utilized'}).reset_index()
-			util['is_ph_psd'] = util['date'].apply(lambda x: self.check_holiday_psd(x))
+			util['is_ph_psd'] = util['date'].apply(lambda x: self.check_holiday_psd(x, self.psd))
 			util['rate'] = util['timezone'].apply(self.condition)
 			util['work_month'] = util['date'].apply(lambda x: pd.to_datetime(x).strftime('%Y-%m'))
 
