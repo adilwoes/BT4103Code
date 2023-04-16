@@ -278,7 +278,7 @@ class ProcessToolUtilization:
         	0 if the date falls on a holiday/PSD no work day, else 1.
 		"""
 		sg_holidays = holidays.Singapore()
-		if date in sg_holidays or (psd_dates is not None and date.strftime('%Y-%m-%d') in psd_dates):
+		if date in sg_holidays or (psd_dates is not None and date in psd_dates):
 			return 0
 		return 1
 	
