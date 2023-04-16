@@ -247,7 +247,7 @@ class ProcessToolUtilization:
 		else:
 			return "tool_utilized"
 		
-	def get_psd_dates(self):
+	def get_psd_dates(self, filepath):
 		"""
 		Gets the Plant Shutdown Dates from the excel file "Work Week Calendar.xlsx"
 
@@ -256,8 +256,8 @@ class ProcessToolUtilization:
 		List
         	A list of the Plant Shutdown Dates inputted in the excel file
 		"""
-		temp = pd.read_excel(self.psd_filepath, sheet_name='Plant Shutdown Dates')
-		temp = temp.iloc[:, 1:]
+		temp = pd.read_excel(filepath, sheet_name='Plant Shutdown Dates')
+		temp = temp.iloc[:, :1]
 		psd_dates = temp.Dates.to_list()
 		return psd_dates
 		

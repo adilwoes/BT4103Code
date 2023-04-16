@@ -48,8 +48,8 @@ class ToolUtilViz:
     TITLE = HTML(value="<h1><b>Tool Utilization Rate (Monthly)</b></h1>")
     TEMPLATE = "plotly_white"
     
-    def __init__(self, tool_files):
-        self.tool_df = ProcessToolUtilization(tool_files).final_df
+    def __init__(self, tool_files, psd_filepath):
+        self.tool_df = ProcessToolUtilization(tool_files, psd_filepath).final_df
 
         self.output = widgets.Output()
 
