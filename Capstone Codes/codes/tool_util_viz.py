@@ -27,25 +27,25 @@ class ToolUtilViz:
         A DataFrame containing the processed tool utilization data.
     output: widgets.Output
         An Output widget used to display the visualization.
-    all_weeks: list
-        A sorted list of unique work weeks in the tool utilization data.
-    start_week_dropdown: widgets.Dropdown
-        A dropdown widget used to select the start week for the visualization.
-    end_week_dropdown: widgets.Dropdown
-        A dropdown widget used to select the end week for the visualization.
+    all_months: list
+        A sorted list of unique work months in the tool utilization data.
+    start_month_dropdown: widgets.Dropdown
+        A dropdown widget used to select the start month for the visualization.
+    end_month_dropdown: widgets.Dropdown
+        A dropdown widget used to select the end month for the visualization.
     filtered_tool_df: pandas.DataFrame
-        A DataFrame containing the filtered tool utilization data for the selected work weeks.
+        A DataFrame containing the filtered tool utilization data for the selected work months.
     util_chart: plotly.graph_objs._figurewidget.FigureWidget
         A FigureWidget object containing the visualization of the tool utilization rate.
     util_graph: widgets.VBox
         A VBox widget containing the output2 widget and other widgets for the visualization.
-    week_selector: widgets.HBox
-        An HBox widget containing the start_week_dropdown and end_week_dropdown widgets.
+    month_selector: widgets.HBox
+        An HBox widget containing the start_month_dropdown and end_month_dropdown widgets.
     tab: widgets.VBox
-        A VBox widget containing the TITLE, week_selector, and util_chart widgets.
+        A VBox widget containing the TITLE, month_selector, and util_chart widgets.
     """
 
-    TITLE = HTML(value="<h1><b>Tool Utilization Rate (Weekly)</b></h1>")
+    TITLE = HTML(value="<h1><b>Tool Utilization Rate (Monthly)</b></h1>")
     TEMPLATE = "plotly_white"
     
     def __init__(self, tool_files):
@@ -53,31 +53,31 @@ class ToolUtilViz:
 
         self.output = widgets.Output()
 
-        self.all_weeks = sorted(self.tool_df.work_week.unique())
-        self.start_week_dropdown = Dropdown(
-			options=self.all_weeks, 
-			description='Start Week:', style={'description_width': 'initial'})
-        self.end_week_dropdown = Dropdown(
-			value=self.all_weeks[-1], 
-			options=self.all_weeks, 
-			description='End Week:', style={'description_width': 'initial'})
+        self.all_months = sorted(self.tool_df.work_month.unique())
+        self.start_month_dropdown = Dropdown(
+			options=self.all_months, 
+			description='Start Month:', style={'description_width': 'initial'})
+        self.end_month_dropdown = Dropdown(
+			value=self.all_months[-1], 
+			options=self.all_months, 
+			description='End Month:', style={'description_width': 'initial'})
 
-        self.start_week_dropdown.observe(self.on_week_filter_change, names='value')
-        self.end_week_dropdown.observe(self.on_week_filter_change, names='value')
+        self.start_month_dropdown.observe(self.on_month_filter_change, names='value')
+        self.end_month_dropdown.observe(self.on_month_filter_change, names='value')
 
-        self.filtered_tool_df = self.tool_df[(self.tool_df['work_week'] >= self.start_week_dropdown.value) & (self.tool_df['work_week'] <= self.end_week_dropdown.value)]
-        self.util_chart = self.plot_weekly_util_rate(self.filtered_tool_df)
+        self.filtered_tool_df = self.tool_df[(self.tool_df['work_month'] >= self.start_month_dropdown.value) & (self.tool_df['work_month'] <= self.end_month_dropdown.value)]
+        self.util_chart = self.plot_monthly_util_rate(self.filtered_tool_df)
 
         with self.output:
             display(self.util_chart)
 
         self.util_graph = VBox([self.output])
-        self.week_selector = HBox([self.start_week_dropdown, self.end_week_dropdown])
-        self.tab = VBox([self.TITLE, self.week_selector, self.util_chart])
+        self.month_selector = HBox([self.start_month_dropdown, self.end_month_dropdown])
+        self.tab = VBox([self.TITLE, self.month_selector, self.util_chart])
     
-    def plot_weekly_util_rate(self, df):
+    def plot_monthly_util_rate(self, df):
         """
-        Plots the weekly tool utilization rate.
+        Plots the monthly tool utilization rate.
 
         Parameters:
         -----------
@@ -95,13 +95,13 @@ class ToolUtilViz:
 
         for tool in df.tool.unique():
             temp_tool = df.loc[df.tool == tool]
-            util_rate_graph.add_scatter(y=temp_tool.final_rate, x=temp_tool.work_week, name=tool)
+            util_rate_graph.add_scatter(y=temp_tool.final_rate, x=temp_tool.work_month, name=tool)
 
         return util_rate_graph
 
-    def on_week_filter_change(self, evt):
+    def on_month_filter_change(self, evt):
         """
-        Updates the visualization when the week selection is changed.
+        Updates the visualization when the monthselection is changed.
 
         Parameters:
         -----------
@@ -110,12 +110,12 @@ class ToolUtilViz:
         """
         with self.output:
             clear_output(wait=True)
-            filtered_tool_df = self.tool_df.loc[(self.tool_df.work_week >= self.start_week_dropdown.value) & (self.tool_df.work_week <= self.end_week_dropdown.value)]
-            weekly_util_graph = self.plot_weekly_util_rate(filtered_tool_df)
-            self.util_chart.data[0]['x'] = weekly_util_graph.data[0]['x']
-            self.util_chart.data[0]['y'] = weekly_util_graph.data[0]['y']
-            self.util_chart.data[1]['x'] = weekly_util_graph.data[1]['x']
-            self.util_chart.data[1]['y'] = weekly_util_graph.data[1]['y']
-            self.util_chart.data[2]['x'] = weekly_util_graph.data[2]['x']
-            self.util_chart.data[2]['y'] = weekly_util_graph.data[2]['y']           
-            weekly_util_graph.show()
+            filtered_tool_df = self.tool_df.loc[(self.tool_df.work_month >= self.start_month_dropdown.value) & (self.tool_df.work_month <= self.end_month_dropdown.value)]
+            monthly_util_graph = self.plot_monthly_util_rate(filtered_tool_df)
+            self.util_chart.data[0]['x'] = monthly_util_graph.data[0]['x']
+            self.util_chart.data[0]['y'] = monthly_util_graph.data[0]['y']
+            self.util_chart.data[1]['x'] = monthly_util_graph.data[1]['x']
+            self.util_chart.data[1]['y'] = monthly_util_graph.data[1]['y']
+            self.util_chart.data[2]['x'] = monthly_util_graph.data[2]['x']
+            self.util_chart.data[2]['y'] = monthly_util_graph.data[2]['y']           
+            monthly_util_graph.show()

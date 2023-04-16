@@ -151,7 +151,7 @@ class ProcessToolUtilization:
 	processed_df : pandas.DataFrame
 		A dataframe containing the cleaned and preprocessed tool utilization data.
 	final_df : pandas.DataFrame
-		A dataframe containing the weekly utilization rates for each tool.
+		A dataframe containing the monthly utilization rates for each tool.
 	"""
 
 	ANALYSTS = ['david jinjie', 'hu haoran', 'nathan linarto', 
@@ -165,7 +165,7 @@ class ProcessToolUtilization:
 		self.tool_files = tool_files
 		self.tools_df = self.parse_files()
 		self.processed_df = self.preprocess()
-		self.final_df = self.format_util_rate_weekly()
+		self.final_df = self.format_util_rate_monthly()
 
 	def is_abbreviation(self, abbr, word):
 		"""
@@ -384,16 +384,16 @@ class ProcessToolUtilization:
 		temp = temp.drop('date/timezone', axis=1)
 		return temp
 
-	def format_util_rate_weekly(self):
+	def format_util_rate_monthly(self):
 		"""
-		Format utilization rate data on a weekly basis by resampling and aggregating
+		Format utilization rate data on a monthly basis by resampling and aggregating
     	data in the processed dataframe.
 	    
 	    Returns:
 		--------
 		pd.DataFrame:
-			Dataframe containing the formatted utilization rate data by week and tool.
-			Columns include: 'work_week', 'tool', 'is_ph_psd', 'rate', and 'final_rate'.
+			Dataframe containing the formatted utilization rate data by month and tool.
+			Columns include: 'work_month', 'tool', 'is_ph_psd', 'rate', and 'final_rate'.
 		"""
 		tools = self.processed_df.tool.unique()
 		dfs = []
@@ -405,9 +405,9 @@ class ProcessToolUtilization:
 			util = util.set_index('date').resample('D').asfreq().fillna(value={'timezone': 0, 'tool': tool, 'project_cleaned': 'tool_not_utilized'}).reset_index()
 			util['is_ph_psd'] = util['date'].apply(lambda x: self.check_holiday_psd(x))
 			util['rate'] = util['timezone'].apply(self.condition)
-			util['work_week'] = util['date'].apply(lambda x: pd.to_datetime(x).strftime('%Y-W%U'))
+			util['work_month'] = util['date'].apply(lambda x: pd.to_datetime(x).strftime('%Y-%m'))
 
-			rate = util.groupby(['work_week', 'tool']).aggregate({'is_ph_psd': lambda x: x.sum(), 'rate': lambda x: x.sum()}).reset_index()
+			rate = util.groupby(['work_month', 'tool']).aggregate({'is_ph_psd': lambda x: x.sum(), 'rate': lambda x: x.sum()}).reset_index()
 			rate['final_rate'] = self.safe_divide(rate.rate, rate.is_ph_psd)
 			dfs.append(rate)
 
