@@ -161,8 +161,9 @@ class ProcessToolUtilization:
 
 	NOT_UTILIZED_WORDS = ["upgrade", "pm", "repair", "test", "check"]
 
-	def __init__(self, tool_files):
+	def __init__(self, tool_files, psd_filepath):
 		self.tool_files = tool_files
+		self.psd_filepath = psd_filepath
 		self.tools_df = self.parse_files()
 		self.processed_df = self.preprocess()
 		self.final_df = self.format_util_rate_monthly()
@@ -245,6 +246,20 @@ class ProcessToolUtilization:
 			return "upgrade"
 		else:
 			return "tool_utilized"
+		
+	def get_psd_dates(self):
+		"""
+		Gets the Plant Shutdown Dates from the excel file "Work Week Calendar.xlsx"
+
+		Returns:
+		----------
+		List
+        	A list of the Plant Shutdown Dates inputted in the excel file
+		"""
+		temp = pd.read_excel(self.psd_filepath, sheet_name='Plant Shutdown Dates')
+		temp = temp.iloc[:, 1:]
+		psd_dates = temp.Dates.to_list()
+		return psd_dates
 		
 	def check_holiday_psd(self, date, psd_dates=None):
 		"""
