@@ -420,10 +420,12 @@ class ProcessToolUtilization:
 			util = util.set_index('date').resample('D').asfreq().fillna(value={'timezone': 0, 'tool': tool, 'project_cleaned': 'tool_not_utilized'}).reset_index()
 			util['is_ph_psd'] = util['date'].apply(lambda x: self.check_holiday_psd(x, self.psd))
 			util['rate'] = util['timezone'].apply(self.condition)
+			util.loc[util.is_ph_psd == 0, 'rate'] = 0
 			util['work_month'] = util['date'].apply(lambda x: pd.to_datetime(x).strftime('%Y-%m'))
 
 			rate = util.groupby(['work_month', 'tool']).aggregate({'is_ph_psd': lambda x: x.sum(), 'rate': lambda x: x.sum()}).reset_index()
 			rate['final_rate'] = self.safe_divide(rate.rate, rate.is_ph_psd)
+			rate['final_rate'] = rate['final_rate'].fillna(0)
 			dfs.append(rate)
 
 		return pd.concat(dfs)
