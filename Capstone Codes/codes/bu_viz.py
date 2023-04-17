@@ -48,11 +48,11 @@ class BUViz:
     COLOR_CODES = ['#ff7f0e', '#1f77b4', '#FFBF5F', '#aec7e8', '#7f7f7f']
 
     def __init__(self, job_input):
-            self.auto_df = ProcessAutomation(job_input).df
+            self.auto_df = ProcessAutomation(job_input).job_input_df
 
             self.output = widgets.Output()
 
-            self.all_months = sorted(self.auto_df.year_month.unique())
+            self.all_months = sorted(self.auto_df['Year Month'].unique())
             self.start_month_dropdown = Dropdown(
                 options=self.all_months, 
                 description='Start Month:', style={'description_width': 'initial'})
@@ -64,7 +64,7 @@ class BUViz:
             self.start_month_dropdown.observe(self.on_month_filter_change, names='value')
             self.end_month_dropdown.observe(self.on_month_filter_change, names='value')
 
-            self.filtered_bu_df = self.auto_df[(self.auto_df['year_month'] >= self.start_month_dropdown.value) & (self.auto_df['year_month'] <= self.end_month_dropdown.value)]
+            self.filtered_bu_df = self.auto_df[(self.auto_df['Year Month'] >= self.start_month_dropdown.value) & (self.auto_df['Year Month'] <= self.end_month_dropdown.value)]
             self.stacked_barchart = self.plot_bu_barchart(self.filtered_bu_df)
 
             with self.output:
@@ -88,9 +88,9 @@ class BUViz:
         FigureWidget
             A FigureWidget object containing the visualization of the BU Loading stacked barchart.
         """
-        temp = df.groupby(['year_month', 'bu'])['job id'].count().unstack().fillna(0).reset_index()
+        temp = df.groupby(['Year Month', 'BU'])['Job ID'].count().unstack().fillna(0).reset_index()
 
-        fig = go.FigureWidget(data=[go.Bar(x=temp['year_month'], y=temp[col], name=col, marker=dict(color=color)) for color, col in zip(self.COLOR_CODES, temp.columns[1:])])
+        fig = go.FigureWidget(data=[go.Bar(x=temp['Year Month'], y=temp[col], name=col, marker=dict(color=color)) for color, col in zip(self.COLOR_CODES, temp.columns[1:])])
         fig.update_layout(barmode='stack', xaxis_title='Year-Month', yaxis_title='Job Count', title="BU Loading", template=self.TEMPLATE)
 
         return fig
@@ -110,7 +110,7 @@ class BUViz:
         """
         with self.output:
             clear_output(wait=True)
-            filtered_bu_df = self.auto_df.loc[(self.auto_df.year_month >= self.start_month_dropdown.value) & (self.auto_df.year_month <= self.end_month_dropdown.value)]
+            filtered_bu_df = self.auto_df.loc[(self.auto_df['Year Month'] >= self.start_month_dropdown.value) & (self.auto_df['Year Month'] <= self.end_month_dropdown.value)]
             stacked_barchart = self.plot_bu_barchart(filtered_bu_df)      
             self.stacked_barchart.data[0]['x'] = stacked_barchart.data[0]['x']
             self.stacked_barchart.data[0]['y'] = stacked_barchart.data[0]['y']
