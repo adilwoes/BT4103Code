@@ -1,36 +1,38 @@
 import pandas as pd
+import json
 import holidays
 import warnings
 warnings.simplefilter("ignore")
 
 class ProcessAutomation:
-    """
+	"""
 	A class for processing and cleaning data from the Job Input Form Excel file and saving it to a new Excel file.
 
 	Parameters:
-    -----------
-    file_path : str
-        The file path of the Job Input Form Excel file.
+	-----------
+	file_path : str
+		The file path of the Job Input Form Excel file.
 	
 	Attributes:
-    -----------
-    file_path : str
-        The file path of the Job Input Form Excel file.
-    df : pandas.DataFrame
-        The processed and cleaned DataFrame.
+	-----------
+	file_path : str
+		The file path of the Job Input Form Excel file.
+	df : pandas.DataFrame
+		The processed and cleaned DataFrame.
 	"""
 
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.df = pd.DataFrame()
-        self.process()
-        self.to_excel()
+	def __init__(self, file_path):
+		self.file_path = file_path
+		self.job_input_df = pd.DataFrame()
+		self.tech_anomaly_df = pd.DataFrame()
+		self.process_job_input()
+		self.process_tech_anomaly_detection_data()
 
-    def process(self):
-        """
+	def process_job_input(self):
+		"""
 		Process the 'Hist. Data' sheet of the Job Input Form Excel file by converting column names to lowercase, 
-    	converting 'date finished' column to datetime format, and creating a new 'year_month' column.
-    
+		converting 'date finished' column to datetime format, and creating a new 'year_month' column.
+	
 		Parameters:
 		-----------
 		None
@@ -44,32 +46,76 @@ class ProcessAutomation:
 		pandas.errors.EmptyDataError:
 			If the 'Hist. Data' sheet is empty.
 		"""
-        
-        self.df = pd.read_excel(self.file_path, sheet_name='Hist. Data')
-        self.df.columns = self.df.columns.str.lower()
-        self.df['date finished'] = pd.to_datetime(self.df['date finished'])
-        self.df['year_month'] = self.df['date finished'].apply(lambda x: x.strftime("%Y-%m"))
+		
+		self.job_input_df = pd.read_excel(self.file_path, sheet_name='Hist. Data')
+		self.job_input_df['Date Finished'] = pd.to_datetime(self.job_input_df['Date Finished'])
+		self.job_input_df['Year Month'] = self.job_input_df['Date Finished'].apply(lambda x: x.strftime("%Y-%m"))
 	
-    def to_excel(self):
-        """
-        Save the processed and cleaned DataFrame to a new Excel file in the 'Data' directory with the filename 
-        'Job_Input_Form_Cleaned.xlsx'.
-        
-        Parameters:
-        -----------
-        None
-        
-        Returns:
-        --------
-        None
-        
-        Raises:
-        -------
-        IOError:
-            If there is an error writing to the new Excel file.
-        """
+	def process_tech_anomaly_detection_data(self):
+		"""
+		Processes data from tech anomaly detection.
 
-        self.df.to_excel(f'Data/Job_Input_Form_Cleaned.xlsx', index=False)
+		Takes data from tech anomaly detection and processes it to create a new DataFrame
+		that shows the technique anomaly rate for each product name, failure, and technology
+		node combination. This method computes the average of the techniques used by each
+		combination, creates a new DataFrame that shows the technique anomaly rate for
+		each combination, and returns the result.
+
+		Returns:
+		--------
+		None
+		"""
+
+		columns = ["Product Name", "Failure", "Technology Node"]
+		df = self.job_input_df[["Product Name", "Failure", "Technology Node", "Techniques"]]
+		df = df.reset_index(drop = True)
+
+		t = json.loads(df["Techniques"][0].replace("'", '"'))
+		techniques = list(map(lambda x: json.loads(x.replace("'", '"')), df["Techniques"].tolist()))
+		keys = []
+		for t in techniques:
+			keys.extend(list(t.keys()))
+		keys = list(set(keys))
+
+		self.tech_anomaly_df = df.copy()
+		for k in keys:
+			l = list(map(lambda x: (1 if x[k][0] == "Yes" else 0) if k in x.keys() else None, techniques))
+			self.tech_anomaly_df[k] = l
+
+		self.tech_anomaly_df = self.tech_anomaly_df.drop("Techniques", axis = 1)
+		self.tech_anomaly_df = self.tech_anomaly_df.groupby(["Product Name", "Failure", "Technology Node"]).apply(lambda x: x.sum()/x.count()).reset_index()
+
+		analysis = self.tech_anomaly_df[keys].to_dict()
+		for analy in analysis.keys():
+			analysis[analy] = list(map(lambda x: "" if str(x) == "nan" else f"{analy}: {x * 100}%, ", list(analysis[analy].values())))
+		result = pd.DataFrame(analysis).apply("".join, axis = 1)
+
+		self.tech_anomaly_df = self.tech_anomaly_df[columns]
+		self.tech_anomaly_df["Technique Anomaly Rate"] = result
+		self.tech_anomaly_df = self.tech_anomaly_df.reset_index()
+	
+	def to_excel(self):
+		"""
+		Save the processed and cleaned DataFrames to new Excel files in the 'Data' directory with the filenames 
+		'job_input_form_powerbi.xlsx' and 'tech_anomaly_detection_rate.xlsx', respectively.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
+
+		Raises:
+		-------
+		IOError:
+			If there is an error writing to either of the new Excel files.
+		"""
+
+		self.job_input_df.to_excel(f'Data/job_input_form_powerbi.xlsx', index=False)
+		self.tech_anomaly_df.to_excel(f'Data/tech_anomaly_detection_rate.xlsx', index=False)
+
 class TATAutomation:
 	def __init__(self, file_path, file_path_cancelled, ww_fp):
 		self.file_path = file_path
@@ -133,19 +179,19 @@ class AnomalyAutomation:
 
 class ProcessToolUtilization:
 	"""
-    A class that processes tool utilization data and calculates the utilization rate.
-    
-    Parameters:
-    -----------
-    tool_files : dict
-        A dictionary mapping file paths to tool labels.
+	A class that processes tool utilization data and calculates the utilization rate.
+	
+	Parameters:
+	-----------
+	tool_files : dict
+		A dictionary mapping file paths to tool labels.
 
-    Attributes:
-    -----------
-    ANALYSTS: list
-        A list of analyst names.
-    NOT_UTILIZED_WORDS: list
-        A list of words that indicate that a tool was not utilized.
+	Attributes:
+	-----------
+	ANALYSTS: list
+		A list of analyst names.
+	NOT_UTILIZED_WORDS: list
+		A list of words that indicate that a tool was not utilized.
 	tool_files : dict
 		A dictionary mapping file paths to tool labels.
 	processed_df : pandas.DataFrame
@@ -155,9 +201,9 @@ class ProcessToolUtilization:
 	"""
 
 	ANALYSTS = ['david jinjie', 'hu haoran', 'nathan linarto', 
-            'winson lua', 'ng kaihui', 'angeline phoa', 
-            'gopinath ranganathan', 'venkat-krishnan ravikumar', 
-            'seah yi-xuan', 'vasanth somasundaram', 'nicholas tee']
+			'winson lua', 'ng kaihui', 'angeline phoa', 
+			'gopinath ranganathan', 'venkat-krishnan ravikumar', 
+			'seah yi-xuan', 'vasanth somasundaram', 'nicholas tee']
 
 	NOT_UTILIZED_WORDS = ["upgrade", "pm", "repair", "test", "check"]
 
@@ -226,7 +272,7 @@ class ProcessToolUtilization:
 
 	def clean_project(self, project_details, word_list):
 		"""
-    	Cleans the project details and returns a cleaned project description.
+		Cleans the project details and returns a cleaned project description.
 
 		Parameters:
 		----------
@@ -239,9 +285,9 @@ class ProcessToolUtilization:
 		Returns:
 		-------
 		str
-        	A cleaned project description. If any word in the word_list is present in the project_details, 
-        	returns "upgrade", otherwise returns "tool_utilized".
-    	"""
+			A cleaned project description. If any word in the word_list is present in the project_details, 
+			returns "upgrade", otherwise returns "tool_utilized".
+		"""
 		if any(word in project_details.lower() for word in word_list):
 			return "upgrade"
 		else:
@@ -254,7 +300,7 @@ class ProcessToolUtilization:
 		Returns:
 		----------
 		List
-        	A list of the Plant Shutdown Dates inputted in the excel file
+			A list of the Plant Shutdown Dates inputted in the excel file
 		"""
 		temp = pd.read_excel(filepath, sheet_name='Plant Shutdown Dates')
 		temp = temp.iloc[:, :1]
@@ -268,14 +314,14 @@ class ProcessToolUtilization:
 		Parameters:
 		----------
 		date : datetime.datetime
-        	Date to be checked for holiday/PSD status.
+			Date to be checked for holiday/PSD status.
 		psd_dates : list, optional
-        	List of plant shutdown dates, in 'YYYY-MM-DD' format. Default is None.
+			List of plant shutdown dates, in 'YYYY-MM-DD' format. Default is None.
 
 		Returns:
 		----------
 		int
-        	0 if the date falls on a holiday/PSD no work day, else 1.
+			0 if the date falls on a holiday/PSD no work day, else 1.
 		"""
 		sg_holidays = holidays.Singapore()
 		if date in sg_holidays or (psd_dates is not None and date in psd_dates):
@@ -327,7 +373,7 @@ class ProcessToolUtilization:
 		1
 		>>> obj.condition(4)
 		0
-    	"""
+		"""
 		if x == 1:
 			return 0.5
 		elif x == 2 or x == 3:
@@ -383,7 +429,7 @@ class ProcessToolUtilization:
 		Preprocesses the data in the tools dataframe by creating new columns and dropping unnecessary columns.
 
 		Returns:
-    	-------
+		-------
 		pandas.DataFrame
 			The preprocessed tools dataframe with the following new columns:
 			- 'date': a datetime object representing the date of each entry
@@ -402,9 +448,9 @@ class ProcessToolUtilization:
 	def format_util_rate_monthly(self):
 		"""
 		Format utilization rate data on a monthly basis by resampling and aggregating
-    	data in the processed dataframe.
-	    
-	    Returns:
+		data in the processed dataframe.
+		
+		Returns:
 		--------
 		pd.DataFrame:
 			Dataframe containing the formatted utilization rate data by month and tool.
@@ -412,7 +458,7 @@ class ProcessToolUtilization:
 		"""
 		tools = self.processed_df.tool.unique()
 		dfs = []
-	    
+		
 		for tool in tools:
 			tool_df = self.filter_by_tool(self.processed_df, tool)
 			util = tool_df.groupby(['date', 'tool', 'project_cleaned']).aggregate({'timezone': lambda x: x.nunique()}).reset_index()
