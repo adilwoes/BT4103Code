@@ -28,7 +28,7 @@ file_names = ['Data/Singapore_Device_Priority_2022 - WW09']
 analyse_year = re.findall('\d+', file_names[0])[0]
 
 excel_file = 'Data/Job Input Form_cleaned.xlsm'
-anomaly_detection_file_path = 'Data/powerbi.xlsx'
+anomaly_detection_file_path = 'Data/tech_anomaly_detection_rate.xlsx'
 tat_qbreakdown_file_path = f'Data/Singapore_Device_Priority_{analyse_year} - Calculated.xlsx'
 tat_qbreakdown_file_path_cancelled = f'Data/Singapore_Device_Priority_{analyse_year} - Cancelled.xlsx'
 ww = 'Data/Work Week Calendar.xlsx'
