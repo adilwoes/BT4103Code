@@ -63,15 +63,15 @@ class TechNodeViz:
 	TEMPLATE = "plotly_white"
 
 	def __init__(self, job_input):
-		self.auto_df = ProcessAutomation(job_input).df
+		self.auto_df = ProcessAutomation(job_input).job_input_df
 
-		self.tech_node_options = list(self.auto_df['technology node'].unique())
+		self.tech_node_options = list(self.auto_df['Technology Node'].unique())
 		self.tech_node_dropdown = Dropdown(
 		    options=self.tech_node_options, 
 		    value=self.tech_node_options[0], 
 		    description='Technology Node:', style={'description_width': 'initial'})
 
-		self.prod_name_options = list(self.auto_df[self.auto_df['technology node']==self.tech_node_dropdown.value]['product name'].unique())
+		self.prod_name_options = list(self.auto_df[self.auto_df['Technology Node']==self.tech_node_dropdown.value]['Product Name'].unique())
 		self.prod_name_dropdown = Dropdown(
 		    options=self.prod_name_options, 
 		    value=self.prod_name_options[0], 
@@ -110,7 +110,7 @@ class TechNodeViz:
         tn_freq_graph : plotly.graph_objs._figurewidget.FigureWidget
             A plotly FigureWidget object containing the technology node distribution plot.
         """
-		tech_node_freq = self.auto_df['technology node'].value_counts()
+		tech_node_freq = self.auto_df['Technology Node'].value_counts()
 
 		layout = go.Layout(title='Count of Jobs by Technology Nodes', template='plotly_white')
 		tn_freq_graph = go.FigureWidget(layout=layout)
@@ -132,7 +132,7 @@ class TechNodeViz:
         prod_freq_graph : plotly.graph_objs._figurewidget.FigureWidget
             A plotly FigureWidget object containing the product distribution plot.
         """
-		prod_name_freq = self.auto_df[self.auto_df['technology node']==tech_node]['product name'].value_counts()
+		prod_name_freq = self.auto_df[self.auto_df['Technology Node']==tech_node]['Product Name'].value_counts()
 
 		layout = go.Layout(title=f'Count of Jobs by Product Names for {tech_node}', template='plotly_white')
 		prod_freq_graph = go.FigureWidget(layout=layout)
@@ -156,7 +156,7 @@ class TechNodeViz:
         fail_freq_graph : plotly.graph_objs._figurewidget.FigureWidget
             A plotly FigureWidget object containing the failure distribution plot.
         """
-		failure_freq = self.auto_df[(self.auto_df['technology node']==tech_node) & (self.auto_df['product name']==prod_name)]['failure'].value_counts()
+		failure_freq = self.auto_df[(self.auto_df['Technology Node']==tech_node) & (self.auto_df['Product Name']==prod_name)]['Failure'].value_counts()
 
 		layout = go.Layout(title=f'Count of Jobs for {prod_name} in {tech_node}', template='plotly_white')
 		fail_freq_graph = go.FigureWidget(layout=layout)
@@ -178,7 +178,7 @@ class TechNodeViz:
         None.
         """
 		tech_node_value = self.tech_node_dropdown.value
-		new_prod_name_options = list(self.auto_df[self.auto_df['technology node']==tech_node_value]['product name'].unique())
+		new_prod_name_options = list(self.auto_df[self.auto_df['Technology Node']==tech_node_value]['Product Name'].unique())
 		self.prod_name_dropdown.options = new_prod_name_options
 		self.prod_name_dropdown.value = new_prod_name_options[0]
 
