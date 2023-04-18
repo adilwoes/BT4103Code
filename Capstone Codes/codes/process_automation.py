@@ -475,3 +475,24 @@ class ProcessToolUtilization:
 			dfs.append(rate)
 
 		return pd.concat(dfs)
+	
+	def to_excel(self):
+		"""
+		Save the processed and cleaned tool utilisation DataFrame to new Excel files in the 'Data' directory 
+		with the filenames 'tool_util.xlsx'.
+
+		Parameters:
+		-----------
+		None
+
+		Returns:
+		--------
+		None
+
+		Raises:
+		-------
+		IOError:
+			If there is an error writing to either of the new Excel files.
+		"""
+
+		self.final_df.to_excel(f'Data/tool_util.xlsx', index=False)
