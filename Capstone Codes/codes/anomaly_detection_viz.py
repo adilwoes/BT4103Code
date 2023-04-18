@@ -14,6 +14,37 @@ pd.set_option('display.max_rows', 300) #replace n with the number of rows you wa
 pd.set_option('display.max_colwidth', None)
 
 class Anomaly_Detection:
+    """
+    A class for visualizing the techniques anomaly detection rate data 
+    of various failures, technology nodes and product names.
+
+    Parameters:
+    -----------
+    job_input: str
+        The file path of the Job Input Form Excel file.
+
+    TITLE_1: str
+        A constant string representing the title of the techniques anomaly detection rate visualization.
+    df: pandas.DataFrame
+        A DataFrame containing the processed and cleaned Job Input Form DataFrame. 
+    output1: widgets.Output
+        An Output widget used to display the visualization.
+    dropdown_product_name: widgets.Dropdown
+        A dropdown widget used to select the product name for the visualization.
+    dropdown_failure: widgets.Dropdown
+        A dropdown widget used to select the failure for the visualization.
+    dropdown_tech_node: widgets.Dropdown
+        A dropdown widget used to select the tech node for the visualization.
+
+    df_output: widgets.VBox
+        The vertical box widget for displaying the dataframe.
+    input_widgets: widget.HBox
+        The vertical box widget for displaying the product name, failure and tech node filters.
+    tab: widget.VBox
+        The vertical box widget containing the title, filters widgets and dataframe widgets.
+    common_filtering: customized function
+        Function to help filter for product name, failure and tech node.
+    """
     
     TITLE_1 = HTML(value="<h1><b>Technology Anomaly Detection Rate</b></h1>")  
         
@@ -52,11 +83,11 @@ class Anomaly_Detection:
     def common_filtering(self, product_name, failure, tech_node):
         self.output1.clear_output()
 
-        # 3 ALL
+        # 3 ALL Selection
         if (product_name == 'ALL') & (failure == 'ALL') & (tech_node == 'ALL'):
             common_filter = self.df
 
-        # 2 ALL
+        # 2 ALL Selection
         elif (product_name == 'ALL') & (failure == 'ALL') & (tech_node != 'ALL') :
             common_filter = self.df[self.df.technology_node == tech_node]
         elif (product_name == 'ALL') & (failure != 'ALL') & (tech_node == 'ALL'):
@@ -64,7 +95,7 @@ class Anomaly_Detection:
         elif (product_name != 'ALL') & (failure == 'ALL') & (tech_node == 'ALL'):
             common_filter = self.df[self.df.product_name == product_name]
 
-        # 1 ALL
+        # 1 ALL Selection
         elif (product_name == 'ALL') & (failure != 'ALL') & (tech_node != 'ALL') :
             common_filter = self.df[(self.df.failure == failure) & (self.df.technology_node == tech_node)]
         elif (product_name != 'ALL') & (failure == 'ALL') & (tech_node != 'ALL'):

@@ -14,7 +14,7 @@ from pptx.dml.color import RGBColor
 from codes.tool_util_viz import ToolUtilViz
 from codes.technode_viz import TechNodeViz
 from codes.bu_viz import BUViz
-from codes.Anomaly_Detection import Anomaly_Detection
+from codes.anomaly_detection_viz import Anomaly_Detection
 from codes.TAT_QBreakdown_dashboard import TatQBreakdown
 
 files = {
