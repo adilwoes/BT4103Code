@@ -15,9 +15,8 @@ from pptx.dml.color import RGBColor
 from codes.tool_util_viz import ToolUtilViz
 from codes.technode_viz import TechNodeViz
 from codes.bu_viz import BUViz
-from codes.Anomaly_Detection import Anomaly_Detection
+from codes.anomaly_detection_viz import Anomaly_Detection
 from codes.TAT_QBreakdown_dashboard import TatQBreakdown
-
 files = {
     "Data/M4_Utilization_Sheet.txt": "M4",
     "Data/M5_Utilization_Sheet.txt": "M5",
@@ -156,17 +155,6 @@ class BuildDashboard:
 
         for i in range(1,6):
             first_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
-#         text_frame = first_slide.shapes[0].text_frame
-
-#         p = text_frame.paragraphs[0]
-#         p.alignment = PP_ALIGN.LEFT
-#         run = p.add_run()
-#         run.text = 'SGP FI'
-
-#         font = run.font
-#         font.name = 'Calibri'
-#         font.size = Pt(30)
-#         font.bold = True
 
         X.save('Powerpoint Output/SGP FI_KPI.pptx')  
         
