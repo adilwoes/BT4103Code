@@ -72,6 +72,59 @@ class ProcessAutomation:
         self.df.to_excel(f'Data/Job_Input_Form_Cleaned.xlsx', index=False)
 
 class TATAutomation:
+        """
+	A class for processing data and initialising data from the Calculated Excel file
+
+	Parameters:
+    -----------
+    file_path : str
+        The file path of the Singapore Device Priority - Calculated file.
+	
+    file_path_cancelled : str
+        The file path of the Singapore Device Priority - Cancelled Excel file.
+	
+    ww_fp : str
+        The file path of the Work Week Calendar Excel file.
+	    
+	Attributes:
+    -----------
+    file_path : str
+        The file path of the Job Input Form Excel file.
+	
+    file_path_cancelled : str
+        The file path of the Singapore Device Priority - Cancelled Excel file.
+	
+    ww_fp : str
+        The file path of the Work Week Calendar Excel file.
+	            
+    ww : pandas.DataFrame
+        The work week calendar data.
+	            
+    df : pandas.DataFrame
+        The cleaned, imputed, calculated DataFrame.
+	            
+    cancelled : pandas.DataFrame
+        The DataFrame comprising all cancelled jobs
+	            
+    priority : List
+        The List of priority values
+	            
+    type : List
+        The List of type values
+	            
+    product : List
+        The List of product values
+	  
+    description : List
+        The List of description values
+	 
+    workyear : List
+        The List of work year values
+	
+    workweek : List
+        The List of work week values
+	        
+	"""
 	def __init__(self, file_path, file_path_cancelled, ww_fp):
 		self.file_path = file_path
 		self.file_path_cancelled = file_path_cancelled
@@ -89,6 +142,17 @@ class TATAutomation:
 		self.process_ww()
 
 	def process(self):
+        """
+		Process the the unique values that are available in the filter function of the dashboard.
+    
+		Parameters:
+		-----------
+		None
+		
+		Returns:
+		--------
+		None
+		"""        
 		self.df = pd.read_excel(self.file_path)
 		self.cancelled = pd.read_excel(self.file_path_cancelled)
 		self.priority = list(self.df['Priority #'].unique())
@@ -105,8 +169,19 @@ class TATAutomation:
 		self.product.sort()        
 		self.workyear = list(self.df['Work Year'].unique())
 		self.workweek = list(self.df['Work Week'].unique())
-
+        
 	def process_ww(self):
+        """
+		Filters out applicable date period in work week calendar according to input data
+    
+		Parameters:
+		-----------
+		None
+		
+		Returns:
+		--------
+		None
+		"""        
 		self.ww = pd.read_excel(self.ww_fp)
 		self.ww = self.ww[self.ww['Year'].isin(self.workyear)].reset_index(drop=True)
 
