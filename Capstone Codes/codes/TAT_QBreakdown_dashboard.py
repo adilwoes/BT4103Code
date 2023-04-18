@@ -20,6 +20,117 @@ pd.set_option('display.max_rows', 50) #replace n with the number of rows you wan
 pd.set_option('display.max_colwidth', None)
 
 class TatQBreakdown:
+    	"""
+	A class for creating interactive visualizations of KPI and KPI (Others) Tab.
+    
+	Parameters:
+    -----------
+    file_path : str
+        The file path of the Singapore Device Priority - Calculated file.
+    file_path_cancelled : str
+        The file path of the Singapore Device Priority - Cancelled Excel file.
+    ww_fp : str
+        The file path of the Work Week Calendar Excel file.
+        
+	Attributes:
+    -----------   
+	title1: str
+        A constant string representing the title of the turnaround time visualization.
+    title2: str
+        A constant string representing the title of the high priority queue breakdown visualization.
+	title3: str
+        A constant string representing the title of the Overall Analysis Status visualization.
+    title4: str
+        A constant string representing the title of the Type Breakdown visualization.
+	title5: str
+        A constant string representing the title of the Type Breakdown by Month visualization.
+    title6: str
+        A constant string representing the title of the Product Breakdown visualization.        
+    param: str
+        A constant string representing the titles of the filters.
+    ww_table: str
+        A constant string representing the titles of the reference table.        
+    br: str
+        A constant string representing the break spacing.          
+	            
+    ww : pandas.DataFrame
+        The work week calendar data.        
+    df : pandas.DataFrame
+        The cleaned, imputed, calculated DataFrame.           
+    cancelled : pandas.DataFrame
+        The DataFrame comprising all cancelled jobs.          
+    priority : List
+        The List of priority values.          
+    type : List
+        The List of type values.       
+    product : List
+        The List of product values.
+    description : List
+        The List of description values.
+    workyear : List
+        The List of work year values.
+    workweek : List
+        The List of work week values.  
+        
+	type_widget : widgets.Dropdown
+		A dropdown widget for selecting the test type.
+	product_widget : widgets.Dropdown
+		A dropdown widget for selecting the product type.        
+	des_widget : widgets.Dropdown
+		A dropdown widget for selecting the description type.
+	ww_year_start_widget : widgets.Dropdown
+		A dropdown widget for selecting the start year.        
+	ww_year_end_widget : widgets.Dropdown
+		A dropdown widget for selecting the end year.        
+	ww_start_widget : widgets.Dropdown
+		A dropdown widget for selecting the start week.
+	ww_end_widget : widgets.Dropdown
+		A dropdown widget for selecting the end week.    
+        
+	refresh_btn1 : widgets.Button
+		A button widget for executing the filter.        
+	type_widget1 : widgets.Dropdown
+		A dropdown widget for selecting the test type.
+	product_widget1 : widgets.Dropdown
+		A dropdown widget for selecting the product type.        
+	des_widget1 : widgets.Dropdown
+		A dropdown widget for selecting the description type.
+	ww_year_start_widget1 : widgets.Dropdown
+		A dropdown widget for selecting the start year.        
+	ww_year_end_widget1 : widgets.Dropdown
+		A dropdown widget for selecting the end year.        
+	ww_start_widget1 : widgets.Slider
+		A Slider widget for selecting the start week.
+	ww_end_widget1 : widgets.Slider
+		A Slider widget for selecting the end week.        
+	refresh_btn1 : widgets.Button
+		A button widget for executing the filter.
+        
+	tat_btn : widgets.Button
+		A button widget for executing the reading of TAT Graph data.         
+        
+	turnaround_graph: plotly.graph_objs._figurewidget.FigureWidget
+		A FigureWidget object for the turnaround time plot.
+	csc_graph: plotly.graph_objs._figurewidget.FigureWidget
+   		A FigureWidget object for the overall analysis status plot.
+	priority_graph: plotly.graph_objs._figurewidget.FigureWidget
+		A FigureWidget object for the high priority queue breakdown plot.
+	type_graph: plotly.graph_objs._figurewidget.FigureWidget
+		A FigureWidget object for the type analysis plot.
+	prod_graph: plotly.graph_objs._figurewidget.FigureWidget
+		A FigureWidget object for the product analysis plot.
+        
+	var_tab1: widgets.VBox
+		A vertical box containing the filters for KPI Tab.
+	var_tab2: widgets.VBox
+		A vertical box containing the filters for KPI (Others) Tab.
+        
+	kpi_tab: widgets.Tab
+		A Tab box containing the KPI Tab.
+	kpi_others_tab: widgets.Tab
+		A Tab box containing the KPI (Others) Tab.
+
+	"""
     br = HTML(value="<br></br>")
     ww_table = HTML(value="<h3><b>Reference Table of Monthly Start Weeks</b></h3>")
     param = HTML(value="<h3><b>Filter According To:</b></h3>")
@@ -134,8 +245,22 @@ class TatQBreakdown:
                               self.title4, self.type_graph,\
                               self.title5, self.type_month_graph,\
                               self.title6, self.prod_graph])
-
+        
     def get_month_end_demand(self, df):
+  		"""
+        Plots the Turnaround Time graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.       
+        
+        Returns:
+        --------
+        month_end_dd : pandas.DataFrame
+            A DataFrame consisting of the aggregated month end deman values.
+
+        """ 
         earliest_d = df['LMS Submission Date'].min()
         if df['LMS Submission Date'].max() > df['FI End'].max():
             latest_d = df['LMS Submission Date'].max()
@@ -156,6 +281,23 @@ class TatQBreakdown:
         return month_end_dd
 
     def export_cycle_time_data(self, analysis, queue, fi_end, tester_util):
+  		"""
+        Export the Turnaround Time Data into Excel.
+
+        Parameters:
+        -----------
+        analysis : List
+            A list of analysis time values.       
+        
+        queue : List
+            A list of queue time values. 
+        
+        fi_end : List
+            A list of FI End date values. 
+        
+        tester_util : List
+            A list of None values.             
+        """    
         df = pd.DataFrame()
         df['FI End'] = fi_end
         df['Analysis'] = analysis
@@ -165,6 +307,20 @@ class TatQBreakdown:
               
     #turnaround time
     def get_cycle_time_graph(self, df):
+  		"""
+        Plots the Turnaround Time graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.       
+        
+        Returns:
+        --------
+        turnaround_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the Turnaround Time plot.
+
+        """           
         df = df.groupby('LMS #').last().loc[:,['Queue', 'Analysis', 'FI End']]
         df_res = df.groupby(df['FI End'].dt.strftime('%Y-%m')).mean().reset_index()
         self.export_cycle_time_data(list(df_res['Analysis']), list(df_res['Queue']), list(df_res['FI End']), \
@@ -191,6 +347,23 @@ class TatQBreakdown:
         return turnaround_graph
 
     def get_monthly_completed_submitted(self, df, cancelled):
+  		"""
+        Plots the Overall Analysis Status graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+            
+        cancelled : pandas.DataFrame
+            A pandas DataFrame of the Canceled data used.       
+        
+        Returns:
+        --------
+        csc_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the Overall Analysis Status plot.
+
+        """          
         #jobs completed, submitted, cancelled
         cancelled = cancelled.groupby('LMS #').max().loc[:,['LMS Submission Date']]
         completed = df.groupby('LMS #').last().loc[:,['LMS Submission Date','FI End']]
@@ -223,6 +396,20 @@ class TatQBreakdown:
         return csc_graph
 
     def high_priority_analysis(self, df):
+ 		"""
+        Plots the Priority Queue Breakdown graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+        
+        Returns:
+        --------
+        priority_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the Priority Queue Breakdown plot.
+
+        """        
         #high priority analysis
         df = df[['Priority #', 'LMS #', 'FI End', 'STATUS']]
         df = df.drop_duplicates()
@@ -237,7 +424,22 @@ class TatQBreakdown:
         return priority_graph
 
     def type_analysis(self, df):
-        #type
+ 		"""
+        Plots the Type analysis graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+        
+        Returns:
+        --------
+        type_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the type analysis plot.
+
+        type_month_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the type analysis by month plot.
+        """
         df = df[['LMS #','TYPE','FI End']]
         df = df.drop_duplicates()
         type_df = df['TYPE'].value_counts().reset_index()
@@ -258,6 +460,19 @@ class TatQBreakdown:
         return type_graph, type_month_graph
 
     def product_loading(self, df):
+ 		"""
+        Plots the product loading graph.
+
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+        
+        Returns:
+        --------
+        prod_graph : plotly.graph_objs._figurewidget.FigureWidget
+            A plotly FigureWidget object containing the product loading plot.         
+        """
         #product loading
         df = df[['LMS #','Product', 'FI End']]
         df = df.drop_duplicates()
@@ -269,6 +484,20 @@ class TatQBreakdown:
 
 ## ------------------------------ FILTER FUNCTIONS                
     def filter_data1(self, graph_df):
+		"""
+        Filters data according filters set.
+
+        Parameters:
+        -----------
+        graph_df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+        
+        Returns:
+        --------
+        graph_df : pandas.DataFrame
+            A filtered pandas DataFrame of the Calculated data used.            
+
+        """          
         if 'ALL' not in self.type_widget1.value:
             not_in = list(set(self.type) - set(self.type_widget1.value))
             for val in not_in:
@@ -298,6 +527,20 @@ class TatQBreakdown:
         return graph_df
     
     def filter_data(self, graph_df):
+		"""
+        Filters data according filters set.
+
+        Parameters:
+        -----------
+        graph_df : pandas.DataFrame
+            A pandas DataFrame of the Calculated data used.
+        
+        Returns:
+        --------
+        graph_df : pandas.DataFrame
+            A filtered pandas DataFrame of the Calculated data used.            
+
+        """        
         if 'ALL' not in self.type_widget.value:
             not_in = list(set(self.type) - set(self.type_widget.value))
             for val in not_in:
@@ -329,12 +572,30 @@ class TatQBreakdown:
         return graph_df
 ## ------------------------------ READ TAT TABLE FUNCTIONS
     def read_tat_data(self, evt):
+		"""
+        Reads the TAT Graph Data Excel and updates 'Tester Utilisation' data
+
+        Parameters:
+        -----------
+        evt : event object
+            Event object passed to the method.
+
+        """
         df = pd.read_excel('Data/TAT graph data.xlsx')
         self.turnaround_graph.data[3]['y'] = df['Tester Utilisation']
               
               
 ## ------------------------------ REFRESH FUNCTIONS  
     def refresh_tab1(self, evt):
+		"""
+        Refreshes the KPI Tab.
+
+        Parameters:
+        -----------
+        evt : event object
+            Event object passed to the method.
+
+        """
         graph_df = self.filter_data(self.df)
         cancelled = self.filter_data(self.cancelled)
         
@@ -364,6 +625,15 @@ class TatQBreakdown:
 
 
     def refresh_tab2(self, evt):
+		"""
+        Refreshes the KPI (Others) Tab.
+
+        Parameters:
+        -----------
+        evt : event object
+            Event object passed to the method.
+
+        """
         graph_df = self.filter_data1(self.df)
 
         self.type_graph.data[0].values = self.type_analysis(graph_df)[0].data[0].values
