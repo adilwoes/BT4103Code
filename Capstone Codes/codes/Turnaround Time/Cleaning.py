@@ -91,8 +91,7 @@ def remove_irrelevant_rows(df):
     return final_df
 
 def save_to_excel(df, file_names):
-    analyse_year = re.findall('\d+', file_names[0])[0]
-    name = f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx'
+    name = f'Data/Singapore_Device_Priority - Cleaned.xlsx'
     df.to_excel(name, index=False)
     return name
     
@@ -156,10 +155,8 @@ def save_missing_to_excel(df, file_names, missing, directory):
     missing_df['FI Pause'] = pause
     missing_df['FI Resume'] = resume
     missing_df['Remarks'] = [None] * len(resume)
-    
-    analyse_year = re.findall('\d+', file_names[0])[0]
 
-    name = f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx'
+    name = f'Data/Singapore_Device_Priority - Missing Data.xlsx'
     if sum(newFormat) != len(lms):
         missing_df.to_excel(name, index=False, header=['LMS #','LMS Submission Date','FI Start', 'FI Interim/ Resume','FI End', 'FI Pause', 'FI Resume', 'Remarks'], sheet_name='Missing Data')  
     else:

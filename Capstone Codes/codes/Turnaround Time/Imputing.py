@@ -26,9 +26,8 @@ month_dict = {
 
 def read_cleaned_data(directory):
     file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
-    analyse_year = re.findall('\d+', file_names[0])[0]
-    df = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx')
-    data_update = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx', sheet_name = 'Python Import')
+    df = pd.read_excel(f'Data/Singapore_Device_Priority - Cleaned.xlsx')
+    data_update = pd.read_excel(f'Data/Singapore_Device_Priority - Missing Data.xlsx', sheet_name = 'Python Import')
     ww_calendar = pd.read_excel('Data/Work Week Calendar.xlsx')
     if 'FI Interim/ Resume' in df.columns:
         newFormat = False
@@ -533,9 +532,8 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
             final_df.loc[index,'FI Start'] = start_date
     return final_df
 
-def save_imputed_to_excel(final_df, file_names):
-    analyse_year = re.findall('\d+', file_names[0])[0]
-    name = f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx'
+def save_imputed_to_excel(final_df):
+    name = 'Data/Singapore_Device_Priority - Imputed.xlsx'
     final_df.to_excel(name, index=False)
     return name
     
@@ -554,5 +552,5 @@ def run_impute(directory):
     print('5. Cancelled Jobs are formatted')
     formatted_df = infer_fi_resume(formatted_df)
     print('6. Smart Inference excuted for FI Pause and Resume')
-    name = save_imputed_to_excel(formatted_df, file_names)
+    name = save_imputed_to_excel(formatted_df)
     print(f'7. Imputed Data is outputted in Excel at \n {name}')

@@ -9,9 +9,7 @@ from dateutil.relativedelta import relativedelta
 warnings.filterwarnings("ignore")
 
 def read_imputed_data(directory):
-    file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
-    analyse_year = re.findall('\d+', file_names[0])[0]
-    df = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx')
+    df = pd.read_excel(f'Data/Singapore_Device_Priority - Imputed.xlsx')
     return df
 
 def get_cancelled_df(df):
@@ -102,9 +100,9 @@ def cal_tat(complete_df):
     return complete_df
 
 def save_df_to_excel(final_df, directory, title):
-    file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
-    analyse_year = re.findall('\d+', file_names[0])[0]
-    name = f'Data/Singapore_Device_Priority_{analyse_year} - {title}.xlsx'
+   # date_cols = ['FI End', 'FI Start', 'LMS Submission Date', 'FI Resume', 'FI Pause', 'PFA Start','PFA Submission']
+   # final_df[date_cols] = final_df[date_cols].apply(lambda x: x.dt.strftime("%d/%m/%Y"))
+    name = f'Data/Singapore_Device_Priority - {title}.xlsx'
     final_df.to_excel(name, index=False)
     return name
     

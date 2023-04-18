@@ -15,7 +15,7 @@ from pptx.dml.color import RGBColor
 from codes.tool_util_viz import ToolUtilViz
 from codes.technode_viz import TechNodeViz
 from codes.bu_viz import BUViz
-from codes.anomaly_detection_viz import Anomaly_Detection
+from codes.Anomaly_Detection import Anomaly_Detection
 from codes.TAT_QBreakdown_dashboard import TatQBreakdown
 
 files = {
@@ -23,13 +23,11 @@ files = {
     "Data/M5_Utilization_Sheet.txt": "M5",
     "Data/CP_Utilization_Sheet.txt": "CP"
 }
-file_names = [f for f in os.listdir('Input Data/') if f.endswith('.xlsm')]
-analyse_year = re.findall('\d+', file_names[0])[0]
 
 excel_file = 'Data/Job Input Form_cleaned.xlsm'
-anomaly_detection_file_path = 'Data/tech_anomaly_detection_rate.xlsx'
-tat_qbreakdown_file_path = f'Data/Singapore_Device_Priority_{analyse_year} - Calculated.xlsx'
-tat_qbreakdown_file_path_cancelled = f'Data/Singapore_Device_Priority_{analyse_year} - Cancelled.xlsx'
+anomaly_detection_file_path = 'Data/powerbi.xlsx'
+tat_qbreakdown_file_path = f'Data/Singapore_Device_Priority - Calculated.xlsx'
+tat_qbreakdown_file_path_cancelled = f'Data/Singapore_Device_Priority - Cancelled.xlsx'
 ww = 'Data/Work Week Calendar.xlsx'
 
 class BuildDashboard:
@@ -68,7 +66,7 @@ class BuildDashboard:
     def __init__(self):
         self.tat_qbreakdown = TatQBreakdown(tat_qbreakdown_file_path, tat_qbreakdown_file_path_cancelled, ww)
         self.anomaly_detection = Anomaly_Detection(anomaly_detection_file_path)
-        self.tool_util_viz = ToolUtilViz(files, ww)
+        self.tool_util_viz = ToolUtilViz(files)
         self.tech_node_viz = TechNodeViz(excel_file)
         self.bu_viz = BUViz(excel_file)
         self.export_to_ppt = Button(description='Export KPI Graphs to PPT', button_style='warning', \
