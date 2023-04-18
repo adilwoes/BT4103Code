@@ -137,14 +137,18 @@ class TatQBreakdown:
 
     def get_month_end_demand(self, df):
         earliest_d = df['LMS Submission Date'].min()
-        latest_d = df['FI End'].max()
-        months = (latest_d.year - earliest_d.year) * 12 + latest_d.month - earliest_d.month
+        if df['LMS Submission Date'].max() > df['FI End'].max():
+            latest_d = df['LMS Submission Date'].max()
+        else:
+            latest_d = df['FI End'].max()
+        r = relativedelta(latest_d, earliest_d)
+        months = r.months + (12*r.years)
         open_jobs_df = df.groupby(['LMS #']).first()
         month_end_dd = pd.DataFrame()
         if pd.notnull(months):
-            for i in range(1,months+1):
+            for i in range(1,months+3):
                 start_d = datetime(earliest_d.year, earliest_d.month,1) - relativedelta(days=1) + relativedelta(months=i-1)
-                curr = open_jobs_df[(open_jobs_df['FI End'] > start_d) | (open_jobs_df['FI End'] == pd.NaT)]
+                curr = open_jobs_df[(open_jobs_df['FI End'] > start_d) | (pd.isnull(open_jobs_df['FI End']))]
                 curr = curr[curr['LMS Submission Date'] <= start_d]
                 month_end_dd.loc[start_d.strftime('%Y-%m'),'Count'] = len(curr)
         else:
@@ -199,11 +203,14 @@ class TatQBreakdown:
                             .count()\
                             .rename(columns={'LMS Submission Date': 'Count'})\
                             .reset_index()
+        submitted = submitted[submitted['LMS Submission Date'] <= completedd['FI End'].max()]
         cancelledd = cancelled.groupby(cancelled['LMS Submission Date'].dt.strftime('%Y-%m'))\
                         .count()\
                         .rename(columns={'LMS Submission Date': 'Count'})\
                         .reset_index()
+        
         month_end_dem = self.get_month_end_demand(df)
+        month_end_dem = month_end_dem[month_end_dem.index <= completedd['FI End'].max()]
         layout = go.Layout(title='Overall Analysis Status', xaxis_title='Month', \
                            yaxis_title='# of Jobs',template = 'plotly_white',\
                           legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))

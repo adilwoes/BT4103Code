@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 warnings.filterwarnings("ignore")
 
-def read_data(directory):
+def read_data_fromDirs(directory):
     file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
 
     # list to store the DataFrames for each sheet
@@ -22,6 +22,21 @@ def read_data(directory):
         df['Work Year'] = int(re.split(' ',file)[0][-4:])
         df_list.append(df)
 
+    # concatenate the DataFrames into a single DataFrame
+    merged_df = pd.concat(df_list)
+    return merged_df, file_names
+
+def read_data_fromFiles(fileList):
+    # list to store the DataFrames for each sheet
+    df_list = []
+
+    # loop through each file and read the sheet
+    for file in fileList:
+        df = pd.read_excel(file, sheet_name='Device Priority')
+        df['Work Week'] = int(re.split(' ',file)[-1][2:4])
+        df['Work Year'] = int(re.split(' ',file)[0][-4:])
+        df_list.append(df)
+    file_names=[x.rpartition(os.sep)[-1] for x in fileList]
     # concatenate the DataFrames into a single DataFrame
     merged_df = pd.concat(df_list)
     return merged_df, file_names
@@ -71,20 +86,8 @@ def feature_create(df):
     return df
 
 def remove_irrelevant_rows(df):
-#Remove PFA-Only Jobs
+    #Remove PFA-Only Jobs
     final_df = df[df['PFA_Only'] == 'No']
-
-#     #Remove Open Jobs (FI-Only) (keep cancelled jobs for analysis later)
-#     completed_fi = final_df[(final_df['FI_Only'] == 'Yes') & (final_df['STATUS'] == 'COMPLETED')]['LMS #'].unique()
-#     all_fi = final_df[(final_df['FI_Only'] == 'Yes')]['LMS #'].unique()
-#     open_fi = [x for x in all_fi if x not in completed_fi]
-
-#     #sieve out cancelled jobs
-#     final_df['STATUS1'] = ['CANCELLED' if x[:10] == 'CANCELLED' else x for x in final_df['STATUS']]
-#     cancelled = final_df[(final_df['STATUS1'] == 'CANCELLED') & (final_df['GRP'] == 'FI')]['LMS #'].unique()
-#     remove = [x for x in open_fi if x not in cancelled]
-
-   # final_df = final_df[~final_df['LMS #'].isin(remove)]
     return final_df
 
 def save_to_excel(df, file_names):
@@ -96,6 +99,7 @@ def save_to_excel(df, file_names):
 def get_jobs_missing_data(final_df):
     #get job ids with missing 'LMS Submission Date'
     all_ids = final_df['LMS #'].unique()
+#     print(final_df)
     subdate_present = final_df[pd.notnull(final_df['LMS Submission Date'])]['LMS #'].unique()
     missing_subdate =  [x for x in all_ids if x not in subdate_present]
 
@@ -110,7 +114,9 @@ def get_jobs_missing_data(final_df):
 
     missing_end = []
     for name, group in fi_pfa_grp:
-        fi_end = group['FI End'].max()
+#         print(group['FI End'])
+#         group['FI End'].to_excel("test.xlsx",index=None)
+        fi_end = group['FI End'].astype('datetime64[ns]').max()
         if pd.isnull(fi_end):
             missing_end.append(group.iloc[0]['LMS #'])
     
@@ -120,17 +126,22 @@ def get_jobs_missing_data(final_df):
     missing = [i for i in missing if i != 'INCOMING']
     missing = [i for i in missing if i not in cancelled]
     missing = set(missing)
-
     return missing
                           
 def save_missing_to_excel(df, file_names, missing, directory):
-    lms, start, interim, end, pause, resume = [], [], [], [], [], []
+    lms, start, interim, end, pause, resume, newFormat = [], [], [], [], [], [], []
 
     for name, group in df.groupby(['LMS #']):
         if name in missing:
             lms.append(group.iloc[-1]['LMS Submission Date'])
             start.append(group.iloc[-1]['FI Start'])
-            interim.append(group.iloc[-1]['FI Interim/ Resume'])
+            #oldFormat=True
+            try:
+                interim.append(group.iloc[-1]['FI Interim/ Resume'])
+            except:
+                interim.append('')
+                newFormat.append(True)
+             #   oldFormat=False
             end.append(group.iloc[-1]['FI End'])
             pause.append(group.iloc[-1]['FI Pause'])
             resume.append(group.iloc[-1]['FI Resume'])
@@ -138,29 +149,47 @@ def save_missing_to_excel(df, file_names, missing, directory):
     missing_df = pd.DataFrame(missing)
     missing_df['LMS Submission Date'] = lms
     missing_df['FI Start'] = start
-    missing_df['FI Interim/ Resume'] = interim
+    #if oldFormat:
+    if sum(newFormat) != len(lms):
+        missing_df['FI Interim/ Resume'] = interim
     missing_df['FI End'] = end
     missing_df['FI Pause'] = pause
     missing_df['FI Resume'] = resume
+    missing_df['Remarks'] = [None] * len(resume)
     
     analyse_year = re.findall('\d+', file_names[0])[0]
 
     name = f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx'
-    missing_df.to_excel(name, index=False, header=['LMS #','LMS Submission Date','FI Start', 'FI Interim/ Resume','FI End', 'FI Pause', 'FI Resume'])  
+    if sum(newFormat) != len(lms):
+        missing_df.to_excel(name, index=False, header=['LMS #','LMS Submission Date','FI Start', 'FI Interim/ Resume','FI End', 'FI Pause', 'FI Resume', 'Remarks'], sheet_name='Missing Data')  
+    else:
+        missing_df.to_excel(name, index=False, header=['LMS #','LMS Submission Date','FI Start','FI End', 'FI Pause', 'FI Resume', 'Remarks'], sheet_name='Missing Data')  
     return name
-                          
-def run_clean(directory):
-    #df, file_names = read_data(directory)
-    #cleaned_df = clean_data(df)
+
+def run_clean_fromFiles(fileNames):
+    df, file_names = read_data_fromFiles(fileNames)
+    cleaned_df = clean_data(df)
     print('1. All Strings are reformatted, data is cleaned')
-    #final_df = feature_create(cleaned_df)
+    final_df = feature_create(cleaned_df)
     print('2. Useful features are created')
-    #final_df = remove_irrelevant_rows(final_df)
+    final_df = remove_irrelevant_rows(final_df)
     print('3. Irrelevant jobs (e.g. PFA only jobs are removed')
-    #missing = get_jobs_missing_data(final_df)
-    #name = save_to_excel(final_df, file_names)
-    name = 'Data/Singapore_Device_Priority_2022 - Missing Data.xlsx'
+    name = save_to_excel(final_df, file_names)
+    missing = get_jobs_missing_data(final_df)
     print(f'4. Missing Data is outputted in Excel at \n {directory} \n as {name}')
-    #name = save_missing_to_excel(final_df, file_names, missing, directory)  
-    name = 'Data/Singapore_Device_Priority_2022 - Cleaned Data.xlsx'
-    print(f'5. Cleaned Data is outputted in Excel at \n {directory} \n as {name}')
+    name = save_missing_to_excel(final_df, file_names, missing, directory)  
+    print(f'5. Cleaned Data is outputted in Excel at \n {directory} \n as {name}')  
+    
+def run_clean(directory):
+    df, file_names = read_data_fromDirs(directory)
+    cleaned_df = clean_data(df)
+    print('1. All Strings are reformatted, data is cleaned')
+    final_df = feature_create(cleaned_df)
+    print('2. Useful features are created')
+    final_df = remove_irrelevant_rows(final_df)
+    print('3. Irrelevant jobs (e.g. PFA only jobs are removed)')
+    name = save_to_excel(final_df, file_names)
+    missing = get_jobs_missing_data(final_df)
+    print(f'4. Missing Data is outputted in Excel \n at {name}')
+    name = save_missing_to_excel(final_df, file_names, missing, directory) 
+    print(f'5. Cleaned Data is outputted in Excel \n at {name}')

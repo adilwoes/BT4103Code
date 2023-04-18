@@ -9,8 +9,7 @@ from dateutil.relativedelta import relativedelta
 warnings.filterwarnings("ignore")
 
 def read_imputed_data(directory):
-    #file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
-    file_names = ['Data/Singapore_Device_Priority_2022 - WW09']
+    file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
     analyse_year = re.findall('\d+', file_names[0])[0]
     df = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx')
     return df
@@ -64,7 +63,22 @@ def analyse_jobs(df):
     print(f"Total completed jobs by FI-PFA with both dates: {fi_pfa_only_usable['LMS #'].nunique()}")
     print('')
 
-    
+def cal_delays(final_df):
+    final_df['LMS Submission Count'] = final_df.groupby(['LMS #'])['LMS Submission Date'].transform(lambda x: x.count())
+    final_df['FI End Count'] = final_df.groupby(['LMS #'])['FI End'].transform(lambda x: x.count())
+    final_df['PFA Start Count'] = final_df.groupby(['LMS #'])['PFA Start'].transform(lambda x: x.count())
+    final_df['Delay'] = final_df['FI Resume'] - final_df['FI Pause'] 
+
+    #sanity check
+    neg = final_df[final_df['Delay'] < timedelta(days = 0)]
+    print(f"Please check LMS #: {neg['LMS #'].unique()}")
+
+    for name, group in final_df.groupby(['LMS #']):
+        total_delay = group['Delay'].sum()
+        for index, row in group.iterrows():
+            final_df.loc[index,'Total Delay'] = total_delay
+    return final_df
+
 def cal_tat(complete_df):
     #calculate FI start to FI end for FI only
 
@@ -76,10 +90,11 @@ def cal_tat(complete_df):
     project_start = grouped_df['FI Start'].min() - grouped_df['LMS Submission Date'].min()
     result = pd.concat([turnaround, project_start], axis=1).reset_index()
     result.columns = ['LMS #', 'Turnaround','Start Duration']
-    result['Start Duration'] = [x.days if x != pd.NaT else pd.NaT for x in result['Start Duration']]
-    result['Turnaround'] = [x.days if x != pd.NaT else pd.NaT for x in result['Turnaround']]
+    result['Start Duration'] = [int(x.days) if pd.notnull(x) else pd.NaT for x in result['Start Duration']]
+    result['Turnaround'] = [int(x.days) if pd.notnull(x) else pd.NaT for x in result['Turnaround']]
     result['Queue'] = list(grouped_df['Total Delay'].max())
-    result['Analysis'] = result['Turnaround'] - list(grouped_df['Total Delay'].max())
+    result['Queue'] = [int(x.days) if pd.notnull(x) else 0 for x in result['Queue']]
+    result['Analysis'] = result['Turnaround'] - result['Queue']
     complete_df = complete_df.merge(result, on='LMS #', how='left')
     complete_df['FI End Week'] = [x.isocalendar()[1] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
     complete_df['FI End Year'] = [x.isocalendar()[0] if pd.notnull(x) else pd.NaT for x in complete_df['FI End']]
@@ -87,8 +102,7 @@ def cal_tat(complete_df):
     return complete_df
 
 def save_df_to_excel(final_df, directory, title):
-    file_names = ['Singapore_Device_Priority_2022 - WW09']
-    #file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
+    file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
     analyse_year = re.findall('\d+', file_names[0])[0]
     name = f'Data/Singapore_Device_Priority_{analyse_year} - {title}.xlsx'
     final_df.to_excel(name, index=False)
@@ -96,12 +110,14 @@ def save_df_to_excel(final_df, directory, title):
     
 def run_calculation(directory):
     imputed_df = read_imputed_data(directory)
+    imputed_df = cal_delays(imputed_df)
     df, cancelled = get_cancelled_df(imputed_df)
     save_df_to_excel(cancelled, directory, 'Cancelled')
     print('1. Summary of Jobs have been processed')
     analyse_jobs(df)
     
+    
     complete_df = cal_tat(df)
     print('2. Turnaround time has been calculated')
     name = save_df_to_excel(complete_df, directory, 'Calculated')
-    print(f'3. Calculated Data is outputted in Excel \n at {directory} \n as {name}')
+    print(f'3. Calculated Data is outputted in Excel \n at {name}')

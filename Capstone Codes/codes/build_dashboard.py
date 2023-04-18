@@ -1,4 +1,5 @@
 import re
+import os
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -22,9 +23,7 @@ files = {
     "Data/M5_Utilization_Sheet.txt": "M5",
     "Data/CP_Utilization_Sheet.txt": "CP"
 }
-
-#file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
-file_names = ['Data/Singapore_Device_Priority_2022 - WW09']
+file_names = [f for f in os.listdir('Input Data/') if f.endswith('.xlsm')]
 analyse_year = re.findall('\d+', file_names[0])[0]
 
 excel_file = 'Data/Job Input Form_cleaned.xlsm'
@@ -116,7 +115,6 @@ class BuildDashboard:
         prod_dist = self.tech_node_viz.tab.children[3].children[0].children[1]
         failure_dist = self.tech_node_viz.tab.children[3].children[1].children[1]
         
-        #os.makedirs(r'Output')  
         tool_util.write_image('Output/Tool Utilization.png')
         bu_graph.write_image('Output/BU Loading.png')
         turnaround_graph.write_image('Output/TAT.png')
@@ -190,9 +188,7 @@ class BuildDashboard:
         self.save_png_tab1()
 
         X = Presentation('Powerpoint Output/SGP FI_KPI_Template.pptx')
-        #Layout = X.slide_layouts[5]
         first_slide = X.slides[0]
-        #first_slide.shapes.title.text = ''
         first_slide.shapes.add_picture('Output/TAT.png', Inches(0.2), Inches(1), height = Inches(3))
         first_slide.shapes.add_picture('Output/High Priority Queue Time Breakdown.png', Inches(4.6), Inches(1), \
                                        height = Inches(3))
@@ -201,7 +197,6 @@ class BuildDashboard:
         first_slide.shapes.add_picture('Output/Tool Utilization.png', Inches(6.9), Inches(4.2), height = Inches(3))
         
         second_slide = X.slides[1]
-        #second_slide.shapes.title.text = ''
         second_slide.shapes.add_picture('Output/Type Breakdown.png', Inches(0.2), Inches(1), height = Inches(3))
         second_slide.shapes.add_picture('Output/Type Breakdown by Month.png', Inches(4.6), Inches(1), height = Inches(3))
         second_slide.shapes.add_picture('Output/Product Breakdown.png', Inches(9), Inches(1), height = Inches(3))
@@ -215,17 +210,6 @@ class BuildDashboard:
             if i < 6:
                 first_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
             second_slide.shapes[i].line.color.rgb = RGBColor(0, 0, 0)
-#         text_frame = first_slide.shapes[0].text_frame
-
-#         p = text_frame.paragraphs[0]
-#         p.alignment = PP_ALIGN.LEFT
-#         run = p.add_run()
-#         run.text = 'SGP FI'
-
-#         font = run.font
-#         font.name = 'Calibri'
-#         font.size = Pt(30)
-#         font.bold = True
 
         X.save('Powerpoint Output/SGP FI_KPI (ALL).pptx')  
    

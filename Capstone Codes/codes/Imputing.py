@@ -25,19 +25,19 @@ month_dict = {
 
 
 def read_cleaned_data(directory):
-    file_names = ['Singapore_Device_Priority_2022 - WW09']
-    #file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
+    file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
     analyse_year = re.findall('\d+', file_names[0])[0]
-    
     df = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Cleaned.xlsx')
-    data_update = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data1.xlsx', sheet_name = 'Python Import')
- 
+    data_update = pd.read_excel(f'Data/Singapore_Device_Priority_{analyse_year} - Missing Data.xlsx', sheet_name = 'Python Import')
     ww_calendar = pd.read_excel('Data/Work Week Calendar.xlsx')
-   
-    return df, ww_calendar, data_update, file_names
+    if 'FI Interim/ Resume' in df.columns:
+        newFormat = False
+    else:
+        newFormat = True
+    return df, ww_calendar, data_update, file_names, newFormat
 
-def update_missing_data(df, data_update, file_names):
-    data_update['FI Interim'] = [y if ~pd.isnull(y) else x for x,y in zip(data_update['FI Interim'],data_update['Remarks'])]
+def update_missing_data(df, data_update, file_names, newFormat):
+    data_update['FI Pause'] = [y if ~pd.isnull(y) else x for x,y in zip(data_update['FI Pause'], data_update['Remarks'])]
 
     analyse_year = re.findall('\d+', file_names[0])[0]
     normal_data_update = data_update[data_update['FI End'] != 'Job cancelled']
@@ -46,19 +46,20 @@ def update_missing_data(df, data_update, file_names):
     fi_impute = [x for x in normal_data_update['LMS #'].unique() if x in df[df['FI_Only'] == 'Yes']['LMS #'].unique()]
 
     for job in fi_impute:
-        index = df.index[(df['LMS #'] == job) & (df['STATUS'] == 'COMPLETED')]
-        index = df.index[(df['LMS #'] == job) & (df['STATUS'] == 'COMPLETED')][0]
-        new_interim = data_update[data_update['LMS #'] == job]['FI Interim'].values[-1]
-        if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'],str):
-            if (new_interim not in df.loc[index,'FI Interim/ Resume']):
-                df.loc[index,'FI Interim/ Resume'] = new_interim
+        if not newFormat:
+            index = df.index[(df['LMS #'] == job) & (df['STATUS'] == 'COMPLETED')][0]
+            new_interim = data_update[data_update['LMS #'] == job]['FI Interim/ Resume'].values[-1]
+            if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'], str):
+                if (new_interim != df.loc[index,'FI Interim/ Resume']):
+                    df.loc[index,'FI Interim/ Resume'] = new_interim
 
-        #correct fi start for all observations
         index_start = df.index[(df['LMS #'] == job)]
         for ind in index_start:
             df.loc[ind,'FI Start'] = data_update[data_update['LMS #'] == job]['FI Start'].values[-1]
             df.loc[ind,'LMS Submission Date'] = data_update[data_update['LMS #'] == job]['LMS Submission Date'].values[-1]
             df.loc[ind,'FI End'] = data_update[data_update['LMS #'] == job]['FI End'].values[-1]
+            df.loc[ind,'FI Pause'] = data_update[data_update['LMS #'] == job]['FI Pause'].values[-1]
+            df.loc[ind,'FI Resume'] = data_update[data_update['LMS #'] == job]['FI Resume'].values[-1]
 
     #data update for FI-PFA jobs (update info at last fi job before pfa takes over)
     fipfa_impute = [x for x in normal_data_update['LMS #'].unique() if x not in fi_impute]
@@ -66,22 +67,24 @@ def update_missing_data(df, data_update, file_names):
 
     for name, group in fi_pfa_grp:
         if name in fipfa_impute:
-            c = group.iloc[0]['all_grp'].count('FI')
-            fi_end = group.iloc[c-1]
-            index = fi_end.name
-            new_interim = data_update[data_update['LMS #'] == name]['FI Interim'].values[-1]
-            if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'],str):
-                if (new_interim not in df.loc[index,'FI Interim/ Resume']):
-                    df.loc[index,'FI Interim/ Resume'] = new_interim
+            if not newFormat:
+                c = group.iloc[0]['all_grp'].count('FI')
+                fi_end = group.iloc[c-1]
+                index = fi_end.name
+                new_interim = data_update[data_update['LMS #'] == name]['FI Interim/ Resume'].values[-1]
+                if pd.notnull(new_interim) & isinstance(df.loc[index,'FI Interim/ Resume'],str):
+                    if (new_interim != df.loc[index,'FI Interim/ Resume']):
+                        df.loc[index,'FI Interim/ Resume'] = new_interim
 
-            #correct fi start for all observations
             index_start = df.index[(df['LMS #'] == name)]
             for ind in index_start:
                 df.loc[ind,'FI Start'] = data_update[data_update['LMS #'] == name]['FI Start'].values[-1]
                 df.loc[ind,'FI End'] = data_update[data_update['LMS #'] == name]['FI End'].values[-1]
                 df.loc[ind,'LMS Submission Date'] = data_update[data_update['LMS #'] == name]['LMS Submission Date'].values[-1]
+                df.loc[ind,'FI Pause'] = data_update[data_update['LMS #'] == name]['FI Pause'].values[-1]
+                df.loc[ind,'FI Resume'] = data_update[data_update['LMS #'] == name]['FI Resume'].values[-1]
 
-    # #remove open jobs
+    #remove open jobs
     ignore = df[(df['LMS Submission Date'] == 'Open') | (df['LMS Submission Date'] == 'Ignore')]['LMS #'].unique()
     df = df[~df['LMS #'].isin(ignore)]
 
@@ -95,15 +98,14 @@ def update_missing_data(df, data_update, file_names):
             df.loc[fi_end,'STATUS'] = 'CANCELLED'
     return df
 
-def format_dates(df, file_names):
-    date_col = ['FI Start', 'FI Interim/ Resume', 'FI End', \
-            'PFA Start','PFA Submission', 'LMS Submission Date',\
-            'FI Pause', 'FI Resume']
-    #create a new object of clean_df
+def format_dates(df, file_names, newFormat):
+    date_col = ['FI Start', 'FI End', 'PFA Start','PFA Submission', 'LMS Submission Date', 'FI Pause', 'FI Resume']
+    if not newFormat:
+        date_col.append('FI Interim/ Resume')
+    
     df.reset_index(inplace=True,drop=True)
     final_df = copy.deepcopy(df)
     df = df.groupby(['LMS #'], as_index=False)
-    
 
     for name, group in df:
         for index, row in group.iterrows():
@@ -126,13 +128,13 @@ def format_dates(df, file_names):
                         except:
                             try:
                                 analyse_year = group['FI Start'].max()
-                                if isinstance(analyse_year, str):
+                                if isinstance(analyse_year, str) :
                                     analyse_year = datetime.strptime(analyse_year, '%m/%d/%Y')
                                 analyse_year = analyse_year.year
                             except:
                                 analyse_year = row['Work Year']
-                            
-
+                        if pd.isnull(analyse_year):
+                            analyse_year = row['Work Year']
                         if (list(group.index).index(index) == 0) & (year != analyse_year):
                             col_error.append((ele,col,'year'))
                             error = True
@@ -166,7 +168,8 @@ def format_dates(df, file_names):
                                 analyse_year = analyse_year.year
                             except:
                                 analyse_year = row['Work Year']
-
+                        if pd.isnull(analyse_year):
+                            analyse_year = row['Work Year']
                         error = False
                         if (list(group.index).index(index) == 0) & (int(year) != analyse_year):
                             col_error.append((dates.index(d),col,'year'))
@@ -192,7 +195,10 @@ def format_dates(df, file_names):
                                     temp = pd.to_datetime(datetime.strptime(d,'%d/%m/%Y'))
                                 except:
                                     ele = ele[:10]
-                                    temp = pd.to_datetime(datetime.strptime(d,'%Y-%m-%d')) 
+                                    try:
+                                        temp = pd.to_datetime(datetime.strptime(d,'%Y-%m-%d'))
+                                    except: 
+                                        temp = pd.to_datetime(datetime.strptime(d,'%Y-%d-%m'))
                             formatted_dates.append(temp)
 
                     if len(formatted_dates) == 1:
@@ -225,7 +231,7 @@ def format_dates(df, file_names):
                     if err[2] == 'year':
                         if list(group.index).index(index) == 0:
                             indiv[2] = str(row['Work Year'])
-                        elif isinstance(lms_date, datetime) and (lms_date != pd.NaT):
+                        elif isinstance(lms_date, datetime) and (pd.notnull(lms_date)):
                             indiv[2] = str(new[date_col.index('LMS Submission Date')].date().year)
                         else: 
                             indiv[2] = str(row['Work Year'])
@@ -243,7 +249,7 @@ def format_dates(df, file_names):
 
                     # day/month error (assume it is error in month)
                     if err[2] == 'month':
-                        if isinstance(lms_date, datetime) and (lms_date != pd.NaT):
+                        if isinstance(lms_date, datetime) and (pd.notnull(lms_date)):
                             indiv[0] = str(new[date_col.index('LMS Submission Date')].date().month)
                         corrected = '/'.join(indiv)
                         corrected_date = datetime.strptime(corrected,'%m/%d/%Y')
@@ -270,9 +276,11 @@ def format_dates(df, file_names):
                     final_df.loc[index,date_col[i]] = update
     return final_df
 
-def fill_resume_pause(final_df):
+def fill_resume_pause(final_df, newFormat):
     #fill up FI Pause and FI Resume column from either 'FI Interim/ Resume' or 'FI Pause' or 'FI Resume'
-    col_list = ['FI Interim/ Resume', 'FI Pause', 'FI Resume']
+    col_list = ['FI Pause', 'FI Resume']
+    if not newFormat:
+        col_list.append('FI Interim/ Resume')
     for index, row in final_df.iterrows():
         if row['GRP'] == 'FI':
             for col in col_list:
@@ -300,8 +308,10 @@ def fill_resume_pause(final_df):
                         final_df.loc[index, 'FI Pause'] = row[col]
 
     #formatting precaution 
-    final_df[["FI Pause", "FI Resume", "LMS Submission Date", "FI Start", 'FI End']] = final_df[["FI Pause", "FI Resume", "LMS Submission Date", "FI Start", 'FI End']].apply(pd.to_datetime)
-    
+    final_df[["FI Pause", "FI Resume", "LMS Submission Date", "FI Start", 'FI End']] = final_df[["FI Pause", "FI Resume", "LMS Submission Date", "FI Start", 'FI End']].astype('datetime64[ns]')
+
+    if not newFormat:
+        final_df = final_df.drop(columns=['FI Interim/ Resume'])
     return final_df
 
 def format_incoming_jobs(final_df, ww_calendar):
@@ -313,23 +323,17 @@ def format_incoming_jobs(final_df, ww_calendar):
     count=1
     for index, row in incoming_df.iterrows():
         if (pd.isnull(row['LMS Submission Date'])):
-            if (pd.isnull(row['FI Start'])):
-                if (pd.isnull(row['FI End'])):
-                    ww = int(row['Work Week'])
-                    y = int(row['Work Year'])
-                    ww_calendar = ww_calendar[ww_calendar['Year'] == y]
-                    m_ww = 'Dec'
-                    for i in range(1,len(ww_calendar)):
-                        if ww_calendar.iloc[0,i] >= m:
-                            m_ww = ww_calendar.columns[i]
-                            break
-                    m = month_dict[m_ww]
-                    
-                    start_d = datetime(int(y),int(m),1)
-                else: 
-                    start_d = row['FI End']
-            else:
-                start_d = row['FI Start']
+            ww = int(row['Work Week'])
+            y = int(row['Work Year'])
+            ww_calendar = ww_calendar[ww_calendar['Year'] == y]
+            m_ww = 'Dec'
+            for i in range(1,len(ww_calendar.columns)):
+                if ww_calendar.iloc[0,i] >= ww:
+                    m_ww = ww_calendar.columns[i]
+                    break
+            m = month_dict[m_ww]
+
+            start_d = datetime(int(y),int(m),1)
         else: 
             start_d = row['LMS Submission Date']
         row['LMS #'] = 'INCOMING' + str(count)
@@ -337,7 +341,6 @@ def format_incoming_jobs(final_df, ww_calendar):
         row['INCOMING'] = 1
         row['LMS Submission Date'] = start_d
         row['FI Start'] = pd.NaT
-        row['FI Interim/ Resume'] = pd.NaT
         row['FI End'] = pd.NaT 
         row['FI Pause'] = pd.NaT    
         row['FI Resume'] = pd.NaT 
@@ -380,7 +383,6 @@ def format_cancelled_jobs(final_df, ww_calendar):
             row_data['STATUS'] = 'CANCELLED'
             row_data['LMS Submission Date'] = start_d
             row_data['FI Start'] = pd.NaT
-            row_data['FI Interim/ Resume'] = pd.NaT
             row_data['FI End'] = pd.NaT
             row_data['FI Pause'] = pd.NaT    
             row_data['FI Resume'] = pd.NaT 
@@ -390,7 +392,6 @@ def format_cancelled_jobs(final_df, ww_calendar):
 
 def infer_fi_resume(final_df):
     #fill up missing Fi Resume values with the next Fi Start value &
-
     temp = copy.deepcopy(final_df)
     grp_df = temp.groupby(['LMS #'], as_index=False)
 
@@ -409,10 +410,8 @@ def infer_fi_resume(final_df):
                     min_resume = [x for x in min_resume_null if pd.notnull(x)]   
                     if (len(min_resume) > 1):
                         if (final_df.loc[index,'FI Pause'] != min_resume[1]):
-                            #ind = list(group.index)[min_resume_null.index(min_resume[1])]
                             final_df.loc[index,'FI Resume'] = min_resume[1]
                             used = min_resume[1]
-                            #final_df.loc[ind,'FI Pause'] = pd.NaT
                             
                     else:                            
                         final_df.loc[index,'FI Resume'] = row['FI Start']
@@ -432,11 +431,12 @@ def infer_fi_resume(final_df):
 
                         elif final_df.loc[index,'FI Pause'] > final_df.loc[next_index,'FI Start']:
                             #second last element of fi
-
+                            print(final_df.loc[next_index,'FI Pause'])
+                            print(final_df.loc[index,'FI Pause'])
                             if final_df.loc[index,'FI Pause'] < final_df.loc[next_index,'FI Pause']:
                                 final_df.loc[index,'FI Resume'] = final_df.loc[next_index,'FI Pause']
                                 used = final_df.loc[next_index,'FI Pause']
-
+                                
                             elif curr_index == fi_count-2:
                                 if final_df.loc[index,'FI Pause'] < final_df.loc[next_index,'FI End']:
                                     final_df.loc[index,'FI Resume'] = final_df.loc[next_index,'FI End']
@@ -511,7 +511,7 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
             y = int(group['Work Year'].min())
             ww_calendar = ww_calendar[ww_calendar['Year'] == y]
             m_ww = 'Dec'
-            for i in range(1,len(ww_calendar)):
+            for i in range(1,len(ww_calendar.columns)):
                 if ww_calendar.iloc[0,i] >= ww:
                     m_ww = ww_calendar.columns[i]
                     break
@@ -533,22 +533,6 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
             final_df.loc[index,'FI Start'] = start_date
     return final_df
 
-def cal_delays(final_df):
-    final_df['LMS Submission Count'] = final_df.groupby(['LMS #'])['LMS Submission Date'].transform(lambda x: x.count())
-    final_df['FI End Count'] = final_df.groupby(['LMS #'])['FI End'].transform(lambda x: x.count())
-    final_df['PFA Start Count'] = final_df.groupby(['LMS #'])['PFA Start'].transform(lambda x: x.count())
-    final_df['Delay'] = final_df['FI Resume'] - final_df['FI Pause'] 
-
-    #sanity check
-    neg = final_df[final_df['Delay'] < timedelta(days = 0)]
-    print(f"Please check LMS #: {neg['LMS #'].unique()}")
-
-    for name, group in final_df.groupby(['LMS #']):
-        total_delay = group['Delay'].sum()
-        for index, row in group.iterrows():
-            final_df.loc[index,'Total Delay'] = total_delay
-    return final_df
-
 def save_imputed_to_excel(final_df, file_names):
     analyse_year = re.findall('\d+', file_names[0])[0]
     name = f'Data/Singapore_Device_Priority_{analyse_year} - Imputed.xlsx'
@@ -556,13 +540,12 @@ def save_imputed_to_excel(final_df, file_names):
     return name
     
 def run_impute(directory):
-    df, ww_calendar, data_update, file_names = read_cleaned_data(directory)
-    updated_df = update_missing_data(df, data_update, file_names)
+    df, ww_calendar, data_update, file_names, newFormat = read_cleaned_data(directory)
+    updated_df = update_missing_data(df, data_update, file_names, newFormat)
     print('1. DataFrame has been updated with the latest data')
-    formatted_df = format_dates(updated_df, file_names)
+    formatted_df = format_dates(updated_df, file_names, newFormat)
     print('2. All dates are standardised')
-    #formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
-    formatted_df = fill_resume_pause(formatted_df)
+    formatted_df = fill_resume_pause(formatted_df, newFormat)
     formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
     print('3. Resume and Pause Columns are filled')
     formatted_df = format_incoming_jobs(formatted_df, ww_calendar)
@@ -571,7 +554,5 @@ def run_impute(directory):
     print('5. Cancelled Jobs are formatted')
     formatted_df = infer_fi_resume(formatted_df)
     print('6. Smart Inference excuted for FI Pause and Resume')
-    formatted_df = fill_all_fi_end_submission(formatted_df, ww_calendar)
-    formatted_df = cal_delays(formatted_df)
     name = save_imputed_to_excel(formatted_df, file_names)
-    print(f'7. Imputed Data is outputted in Excel at \n {directory} \n as {name}')
+    print(f'7. Imputed Data is outputted in Excel at \n {name}')
