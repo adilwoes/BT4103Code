@@ -45,8 +45,8 @@ from constant import TEST_PHASES, TEST_PHASE_VARIANT, FAILURE, FAILURE_VARIANT, 
 from mapping import ANALYSTS_MAPPING, PRODUCT_MAPPING, TECHNIQUES_MAP, TECHNIQUES_MAP_LONG, TECHNIQUES_MAP_SHORT, PROD_BU_TN_MAPPING
 
 # Required data files
-non_std_df_file_name = "Non-standardizedData.xlsx"
-anomaly_detector_training_data = "training_data_anomaly.csv"
+non_std_df_file_name = "Data/Non-standardizedData.xlsx"
+anomaly_detector_training_data = "Data/training_data_anomaly.csv"
 
 # Read in unstructured raw data
 non_std_df = pd.read_excel(non_std_df_file_name) ##Change file name accordingly
@@ -757,5 +757,5 @@ for row in rows:
         print(f"Unable to extract:\n{row}")
 
 output = pd.DataFrame(result)
-output[output["analyst(s)"] != ""].to_csv("automation_output_v2_fi_only.csv")
-output.to_csv("automation_output_v2.csv")
+output[output["analyst(s)"] != ""].to_csv("Data/automation_output_v2_fi_only.csv")
+output.to_csv("Data/automation_output_v2.csv")
