@@ -16,7 +16,7 @@ def read_data_fromDirs(directory):
     -----------
     directory : String
        Directory of raw data.
-       
+
     Returns:
     --------
     merged_df : pandas.DataFrame
@@ -29,7 +29,6 @@ def read_data_fromDirs(directory):
 
     # list to store the DataFrames for each sheet
     df_list = []
-
     # loop through each file and read the sheet
     for file in file_names:
         file_path = os.path.join(directory, file)
@@ -43,7 +42,7 @@ def read_data_fromDirs(directory):
     return merged_df, file_names
 
 def read_data_fromFiles(fileList):
-        """
+    """
     Reads all Excel file for analysis from a list of file names.
 
     Parameters:
@@ -74,7 +73,7 @@ def read_data_fromFiles(fileList):
     return merged_df, file_names
 
 def clean_data(df):
-        """
+    """
     Cleans and standardise all string columns.
 
     Parameters:
@@ -319,5 +318,5 @@ def run_clean(directory):
     name = save_to_excel(final_df)
     missing = get_jobs_missing_data(final_df)
     print(f'4. Missing Data is outputted in Excel \n at {name}')
-    name = save_missing_to_excel(final_df, missing, directory) 
+    name = save_missing_to_excel(final_df, missing) 
     print(f'5. Cleaned Data is outputted in Excel \n at {name}')

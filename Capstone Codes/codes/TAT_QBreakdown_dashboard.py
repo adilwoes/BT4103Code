@@ -20,7 +20,7 @@ pd.set_option('display.max_rows', 50) #replace n with the number of rows you wan
 pd.set_option('display.max_colwidth', None)
 
 class TatQBreakdown:
-    	"""
+    """
 	A class for creating interactive visualizations of KPI and KPI (Others) Tab.
     
 	Parameters:
@@ -247,7 +247,7 @@ class TatQBreakdown:
                               self.title6, self.prod_graph])
         
     def get_month_end_demand(self, df):
-  		"""
+        """
         Plots the Turnaround Time graph.
 
         Parameters:
@@ -281,7 +281,7 @@ class TatQBreakdown:
         return month_end_dd
 
     def export_cycle_time_data(self, analysis, queue, fi_end, tester_util):
-  		"""
+        """
         Export the Turnaround Time Data into Excel.
 
         Parameters:
@@ -307,7 +307,7 @@ class TatQBreakdown:
               
     #turnaround time
     def get_cycle_time_graph(self, df):
-  		"""
+        """
         Plots the Turnaround Time graph.
 
         Parameters:
@@ -347,7 +347,7 @@ class TatQBreakdown:
         return turnaround_graph
 
     def get_monthly_completed_submitted(self, df, cancelled):
-  		"""
+        """
         Plots the Overall Analysis Status graph.
 
         Parameters:
@@ -396,7 +396,7 @@ class TatQBreakdown:
         return csc_graph
 
     def high_priority_analysis(self, df):
- 		"""
+        """
         Plots the Priority Queue Breakdown graph.
 
         Parameters:
@@ -424,7 +424,7 @@ class TatQBreakdown:
         return priority_graph
 
     def type_analysis(self, df):
- 		"""
+        """
         Plots the Type analysis graph.
 
         Parameters:
@@ -460,7 +460,7 @@ class TatQBreakdown:
         return type_graph, type_month_graph
 
     def product_loading(self, df):
- 		"""
+        """
         Plots the product loading graph.
 
         Parameters:
@@ -484,7 +484,7 @@ class TatQBreakdown:
 
 ## ------------------------------ FILTER FUNCTIONS                
     def filter_data1(self, graph_df):
-		"""
+        """
         Filters data according filters set.
 
         Parameters:
@@ -527,7 +527,7 @@ class TatQBreakdown:
         return graph_df
     
     def filter_data(self, graph_df):
-		"""
+        """
         Filters data according filters set.
 
         Parameters:
@@ -572,7 +572,7 @@ class TatQBreakdown:
         return graph_df
 ## ------------------------------ READ TAT TABLE FUNCTIONS
     def read_tat_data(self, evt):
-		"""
+        """
         Reads the TAT Graph Data Excel and updates 'Tester Utilisation' data
 
         Parameters:
@@ -587,7 +587,7 @@ class TatQBreakdown:
               
 ## ------------------------------ REFRESH FUNCTIONS  
     def refresh_tab1(self, evt):
-		"""
+        """
         Refreshes the KPI Tab.
 
         Parameters:
@@ -625,7 +625,7 @@ class TatQBreakdown:
 
 
     def refresh_tab2(self, evt):
-		"""
+        """
         Refreshes the KPI (Others) Tab.
 
         Parameters:

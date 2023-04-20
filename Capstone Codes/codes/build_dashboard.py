@@ -65,7 +65,7 @@ class BuildDashboard:
     def __init__(self):
         self.tat_qbreakdown = TatQBreakdown(tat_qbreakdown_file_path, tat_qbreakdown_file_path_cancelled, ww)
         self.anomaly_detection = Anomaly_Detection(anomaly_detection_file_path)
-        self.tool_util_viz = ToolUtilViz(files)
+        self.tool_util_viz = ToolUtilViz(files, ww)
         self.tech_node_viz = TechNodeViz(excel_file)
         self.bu_viz = BUViz(excel_file)
         self.export_to_ppt = Button(description='Export KPI Graphs to PPT', button_style='warning', \

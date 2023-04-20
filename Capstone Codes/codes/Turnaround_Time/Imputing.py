@@ -25,28 +25,28 @@ month_dict = {
 
 
 def read_cleaned_data(directory):
-    		"""
-        Reads all the DataFrames used in the Imputing step.
+    """
+    Reads all the DataFrames used in the Imputing step.
 
-        Parameters:
-        -----------
-        directory : str
-            Directory of input data.
+    Parameters:
+    -----------
+    directory : str
+        Directory of input data.
 
-        Returns:
-        --------
-        df : pandas.DataFrame
-           A pandas DataFrame of the result from the Data Cleaning step.
-           
-        ww_calendar : pandas.DataFrame
-           A pandas DataFrame of the Work Week Calendar.
+    Returns:
+    --------
+    df : pandas.DataFrame
+       A pandas DataFrame of the result from the Data Cleaning step.
 
-        file_names : List
-           A list containing the all the file names of the raw data.
-           
-        newFormat : Boolean
-           A boolean value indicating whether FI Interim/ Resume column is present.
-        """
+    ww_calendar : pandas.DataFrame
+       A pandas DataFrame of the Work Week Calendar.
+
+    file_names : List
+       A list containing the all the file names of the raw data.
+
+    newFormat : Boolean
+       A boolean value indicating whether FI Interim/ Resume column is present.
+    """
     file_names = [f for f in os.listdir(directory) if f.endswith('.xlsm')]
     df = pd.read_excel(f'Data/Singapore_Device_Priority - Cleaned.xlsx')
     data_update = pd.read_excel(f'Data/Singapore_Device_Priority - Missing Data.xlsx', sheet_name = 'Python Import')
@@ -142,25 +142,25 @@ def update_missing_data(df, data_update, file_names, newFormat):
     return df
 
 def format_dates(df, file_names, newFormat):
-"""
-    A function to format and check on validity of date columns
+    """
+        A function to format and check on validity of date columns
 
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-       A pandas DataFrame of the updated result from the Data Cleaning step.  
+        Parameters:
+        -----------
+        df : pandas.DataFrame
+           A pandas DataFrame of the updated result from the Data Cleaning step.  
 
-    file_names : List
-       A list containing the all the file names of the raw data.
-       
-   newFormat : Boolean
-       A boolean value indicating whether FI Interim/ Resume column is present.
-       
-    Returns:
-    --------
-    final_df : pandas.DataFrame
-       A pandas DataFrame of the updated result from the Data Cleaning step with corrected dates.
-""" 
+        file_names : List
+           A list containing the all the file names of the raw data.
+
+       newFormat : Boolean
+           A boolean value indicating whether FI Interim/ Resume column is present.
+
+        Returns:
+        --------
+        final_df : pandas.DataFrame
+           A pandas DataFrame of the updated result from the Data Cleaning step with corrected dates.
+    """ 
     date_col = ['FI Start', 'FI End', 'PFA Start','PFA Submission', 'LMS Submission Date', 'FI Pause', 'FI Resume']
     if not newFormat:
         date_col.append('FI Interim/ Resume')
@@ -339,22 +339,22 @@ def format_dates(df, file_names, newFormat):
     return final_df
 
 def fill_resume_pause(final_df, newFormat):
-"""
+    """
     A function to fill FI Resume and FI Pause columns depending on the data type.
 
     Parameters:
     -----------
     df : pandas.DataFrame
        A pandas DataFrame of the updated result from the Data Cleaning step.  
-   
+
    newFormat : Boolean
        A boolean value indicating whether FI Interim/ Resume column is present.
-       
+
     Returns:
     --------
     final_df : pandas.DataFrame
        A pandas DataFrame of the updated FI Pause and FI Resume columns
-"""     
+    """     
     #fill up FI Pause and FI Resume column from either 'FI Interim/ Resume' or 'FI Pause' or 'FI Resume'
     col_list = ['FI Pause', 'FI Resume']
     if not newFormat:
@@ -393,7 +393,7 @@ def fill_resume_pause(final_df, newFormat):
     return final_df
 
 def format_incoming_jobs(final_df, ww_calendar):
-"""
+    """
     A function to make incoming jobs unique and populate LMS Submission Date Column 
 
     Parameters:
@@ -408,7 +408,7 @@ def format_incoming_jobs(final_df, ww_calendar):
     --------
     final_df : pandas.DataFrame
        A pandas DataFrame that is updated with formatted incoming jobs.
-"""     
+    """     
     #handle incoming status
     incoming_df = final_df[(final_df['LMS #'] == 'INCOMING') & (final_df['GRP'] == 'FI')]
     #remove duplicate incoming status 
@@ -443,7 +443,7 @@ def format_incoming_jobs(final_df, ww_calendar):
     return final_df
 
 def format_cancelled_jobs(final_df, ww_calendar):
-"""
+    """
     A function to format cancelled jobs.
 
     Parameters:
@@ -458,7 +458,7 @@ def format_cancelled_jobs(final_df, ww_calendar):
     --------
     final_df : pandas.DataFrame
        A pandas DataFrame that is updated with formatted cancelled jobs.
-"""
+    """
     #changing cancelled jobs
     cancelled = final_df[final_df['STATUS'] == 'CANCELLED']['LMS #'].unique()
     new_df = final_df.copy(deep=True)
@@ -501,7 +501,7 @@ def format_cancelled_jobs(final_df, ww_calendar):
     return final_df
 
 def infer_fi_resume(final_df):
-"""
+    """
     A function to infer FI Resume and FI Pause values from previous and next observations.
 
     Parameters:
@@ -513,7 +513,7 @@ def infer_fi_resume(final_df):
     --------
     final_df : pandas.DataFrame
        A pandas DataFrame that is updated with corrected FI Resume and FI Pause column.
-"""    
+    """    
     #fill up missing Fi Resume values with the next Fi Start value &
     temp = copy.deepcopy(final_df)
     grp_df = temp.groupby(['LMS #'], as_index=False)
@@ -623,7 +623,7 @@ def infer_fi_resume(final_df):
     return final_df
 
 def fill_all_fi_end_submission(final_df, ww_calendar):
-"""
+    """
     A function to fill all observations with FI END and LMS Submission Dates.
 
     Parameters:
@@ -638,7 +638,7 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
     --------
     final_df : pandas.DataFrame
        A pandas DataFrame with filled FI END and LMS Submission Dates in all observations.
-"""      
+    """      
     #fill in all rows with fi end and lms submission
     group_final_df = final_df.groupby(['LMS #'], as_index=False)
     for name, group in group_final_df:
@@ -673,7 +673,7 @@ def fill_all_fi_end_submission(final_df, ww_calendar):
     return final_df
 
 def save_imputed_to_excel(final_df):
-"""
+    """
     A function to save imputed DataFrame into Excel
 
     Parameters:
@@ -685,20 +685,20 @@ def save_imputed_to_excel(final_df):
     --------
     name : String
         The name that imputed DataFrame was saved as.
-"""      
+    """      
     name = 'Data/Singapore_Device_Priority - Imputed.xlsx'
     final_df.to_excel(name, index=False)
     return name
     
 def run_impute(directory):
-"""
+    """
     Runs all the steps required in the data imputation process.
 
     Parameters:
     -----------
     directory : str
         Directory of cleaned data.
-"""
+    """
     df, ww_calendar, data_update, file_names, newFormat = read_cleaned_data(directory)
     updated_df = update_missing_data(df, data_update, file_names, newFormat)
     print('1. DataFrame has been updated with the latest data')

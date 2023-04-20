@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 warnings.filterwarnings("ignore")
 
 def read_imputed_data(directory):
-"""
+    """
     Reads the result from the Data Imputing step.
 
     Parameters:
@@ -21,12 +21,12 @@ def read_imputed_data(directory):
     --------
     df : pandas.DataFrame
        A pandas DataFrame of the result from the Data Imputing step.
-"""    
+    """    
     df = pd.read_excel(f'Data/Singapore_Device_Priority - Imputed.xlsx')
     return df
 
 def get_cancelled_df(df):
-"""
+    """
     Gets the cancelled jobs from Imputed DataFrame.
 
     Parameters:
@@ -41,7 +41,7 @@ def get_cancelled_df(df):
     
     cancelled : pandas.DataFrame
        A pandas DataFrame of cancelled jobs.       
-"""     
+    """     
     #remove cancelled items, for analysis later
     cancelled = df[df['STATUS'] == 'CANCELLED']
     df = df[~df['LMS #'].isin(cancelled['LMS #'].unique())]
@@ -50,7 +50,7 @@ def get_cancelled_df(df):
     return df, cancelled
 
 def analyse_jobs(df):
-"""
+    """
     Prints an overall summary of jobs analysed.
 
     Parameters:
@@ -58,7 +58,7 @@ def analyse_jobs(df):
     df : pandas.DataFrame
        A pandas DataFrame of the result from the Data Imputing step.
       
-"""     
+    """     
     #job ids that are used, drop those that are not completed by fi team
     completed_ids = list(df[df['STATUS'] == 'COMPLETED']['LMS #'].unique())
     handover_ids = list(df[df['PFA Start Count'] > 0]['LMS #'].unique())
@@ -100,7 +100,7 @@ def analyse_jobs(df):
     print('')
 
 def cal_delays(final_df):
-"""
+    """
     Calculates the delay of every observation.
 
     Parameters:
@@ -113,7 +113,7 @@ def cal_delays(final_df):
     final_df : pandas.DataFrame
        A pandas DataFrame with additional 4 columns that is used to derive the delay time.
       
-"""      
+    """      
     final_df['LMS Submission Count'] = final_df.groupby(['LMS #'])['LMS Submission Date'].transform(lambda x: x.count())
     final_df['FI End Count'] = final_df.groupby(['LMS #'])['FI End'].transform(lambda x: x.count())
     final_df['PFA Start Count'] = final_df.groupby(['LMS #'])['PFA Start'].transform(lambda x: x.count())
@@ -130,7 +130,7 @@ def cal_delays(final_df):
     return final_df
 
 def cal_tat(complete_df):
-"""
+    """
     Calculates the turnaround, queue and analysis time of a job.
 
     Parameters:
@@ -142,7 +142,7 @@ def cal_tat(complete_df):
     --------
     complete_df : pandas.DataFrame
        A pandas DataFrame with additional 5 columns (Turnaround, Queue, Analysis, FI End Week, FI End Year).
-"""    
+    """    
     #calculate FI start to FI end for FI only
 
     # Group the data by the LMS column
@@ -163,7 +163,7 @@ def cal_tat(complete_df):
     return complete_df
 
 def save_df_to_excel(final_df, title):
-"""
+    """
     A function to save  DataFrame into Excel.
 
     Parameters:
@@ -178,28 +178,28 @@ def save_df_to_excel(final_df, title):
     --------
     name : String
         The name that calculated DataFrame was saved as.
-"""      
+    """      
     name = f'Data/Singapore_Device_Priority - {title}.xlsx'
     final_df.to_excel(name, index=False)
     return name
     
 def run_calculation(directory):
-"""
+    """
     Runs all the steps required in the data calculation process.
 
     Parameters:
     -----------
     directory : str
         Directory of Imputed data.
-"""
+    """
     imputed_df = read_imputed_data(directory)
     imputed_df = cal_delays(imputed_df)
     df, cancelled = get_cancelled_df(imputed_df)
-    save_df_to_excel(cancelled, directory, 'Cancelled')
+    save_df_to_excel(cancelled, 'Cancelled')
     print('1. Summary of Jobs have been processed')
     analyse_jobs(df)
     
     complete_df = cal_tat(df)
     print('2. Turnaround time has been calculated')
-    name = save_df_to_excel(complete_df, directory, 'Calculated')
+    name = save_df_to_excel(complete_df, 'Calculated')
     print(f'3. Calculated Data is outputted in Excel \n at {name}')
